@@ -61,4 +61,4 @@ crashlytics-build.properties
 hs_err_pid*
 
 ### Libs
-/libs
+/libs/

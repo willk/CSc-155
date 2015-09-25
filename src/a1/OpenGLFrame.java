@@ -14,6 +14,15 @@ import java.awt.*;
 
 import static com.jogamp.opengl.GL4.GL_TRIANGLES;
 
+/*
+ * TODO:
+ *  FPSAnimator
+ *  Buttons to work
+ *  Get JOGL version
+ *  Get triangle animated
+ *  Get triangle to change color
+ */
+
 public class OpenGLFrame extends JFrame implements GLEventListener {
     private GLCanvas glCanvas;
     private int renderer;

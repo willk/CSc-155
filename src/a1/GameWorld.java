@@ -1,94 +1,71 @@
 package a1;
 
-import a1.views.VersionView;
-import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.awt.GLJPanel;
 import com.jogamp.opengl.util.FPSAnimator;
 import graphicslib3D.GLSLUtils;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.nio.FloatBuffer;
 
 import static com.jogamp.opengl.GL.GL_CCW;
+import static com.jogamp.opengl.GL.GL_TRIANGLES;
 import static com.jogamp.opengl.GL2ES3.GL_COLOR;
-import static com.jogamp.opengl.GL4.GL_TRIANGLES;
 
-public class OpenGLFrame extends JFrame implements GLEventListener, MouseWheelListener {
+/**
+ * Created by willk on 9/29/2015.
+ */
+public class GameWorld extends GLJPanel implements GLEventListener, MouseWheelListener {
+    private float xAxis, yAxis, scaleAmount;
+    private int renderer, colorNumber, VAO[];
+    private FPSAnimator fpsAnimator;
     private GLCanvas glCanvas;
-    private int renderer, cNumber;
-    private static float xAxis, yAxis, sAmt;
-    private int VAO[] = new int[1];
-    private VersionView vv;
-    private FPSAnimator animator;
-    private JButton up, down, changeColor;
-    private JPanel buttons;
-    private Package p = Package.getPackage("com.jogamp.opengl");
 
-    public OpenGLFrame() {
-        vv = new VersionView();
-        this.setTitle("William Kinderman - CSc 155 - A1");
-        this.setSize(1280, 800);
-        this.setLocationRelativeTo(null);
+    public GameWorld() {
+    }
+
+    public void initLayout() {
+        colorNumber = 0;
+        xAxis = 0;
+        yAxis = 0;
+        scaleAmount = 1;
+
         this.addMouseWheelListener(this);
-        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-        cNumber = 0;
-        xAxis = 0.0f;
-        yAxis = 0.0f;
-        sAmt = 1.0f;
-
-        up = new JButton();
-        up.setText("Up");
-        up.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (yAxis < 1.0) yAxis += 0.03;
-            }
-        });
-
-        down = new JButton();
-        down.setText("Down");
-        down.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (yAxis > -1.0) yAxis -= 0.03;
-            }
-        });
-
-        changeColor = new JButton();
-        changeColor.setText("Change Color");
-        changeColor.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cNumber += 1;
-                cNumber %= 4;
-            }
-        });
-
-        buttons = new JPanel();
-        buttons.add(up);
-        buttons.add(down);
-        buttons.add(changeColor);
 
         glCanvas = new GLCanvas();
         glCanvas.addGLEventListener(this);
-
-        this.getContentPane().add(glCanvas, BorderLayout.CENTER);
-        this.getContentPane().add(buttons, BorderLayout.SOUTH);
-        this.getContentPane().add(vv, BorderLayout.NORTH);
-        this.setVisible(true);
     }
 
-    public void display(GLAutoDrawable drawable) {
-        GL4 gl = (GL4) drawable.getGL();
+    @Override
+    public void init(GLAutoDrawable glAutoDrawable) {
+        GL4 gl = (GL4) glAutoDrawable.getGL();
+
+        // Get the OpenGL version number
+//        vv.updateOpenGLVersion(gl.glGetString(GL.GL_VERSION));
+//        System.out.println("OpenGL Version: " + gl.glGetString(GL.GL_VERSION) +
+//                " JOGL Version: " + p.getImplementationVersion());
+
+        renderer = createShaderPrograms(glAutoDrawable);
+
+        gl.glGenVertexArrays(VAO.length, VAO, 0);
+        gl.glBindVertexArray(VAO[0]);
+
+        fpsAnimator = new FPSAnimator(glCanvas, 120);
+        fpsAnimator.start();
+    }
+
+    @Override
+    public void dispose(GLAutoDrawable glAutoDrawable) {
+
+    }
+
+    @Override
+    public void display(GLAutoDrawable glAutoDrawable) {
+        GL4 gl = (GL4) glAutoDrawable.getGL();
 
         FloatBuffer color = FloatBuffer.allocate(4);
         FloatBuffer attrib = FloatBuffer.allocate(4);
@@ -110,31 +87,14 @@ public class OpenGLFrame extends JFrame implements GLEventListener, MouseWheelLi
 
 
         gl.glClearBufferfv(GL_COLOR, 0, color);
-        gl.glVertexAttribI1i(2, cNumber);
-        gl.glVertexAttrib1f(1, sAmt);
+        gl.glVertexAttribI1i(2, colorNumber);
+        gl.glVertexAttrib1f(1, scaleAmount);
         gl.glVertexAttrib4fv(0, attrib);
         gl.glUseProgram(renderer);
 
         gl.glFrontFace(GL_CCW);
 
         gl.glDrawArrays(GL_TRIANGLES, 0, 3);
-    }
-
-    public void init(GLAutoDrawable glAutoDrawable) {
-        GL4 gl = (GL4) glAutoDrawable.getGL();
-
-        // Get the OpenGL version number
-        vv.updateOpenGLVersion(gl.glGetString(GL.GL_VERSION));
-        System.out.println("OpenGL Version: " + gl.glGetString(GL.GL_VERSION) +
-                " JOGL Version: " + p.getImplementationVersion());
-
-        renderer = createShaderPrograms(glAutoDrawable);
-
-        gl.glGenVertexArrays(VAO.length, VAO, 0);
-        gl.glBindVertexArray(VAO[0]);
-
-        animator = new FPSAnimator(glCanvas, 120);
-        animator.start();
     }
 
     private int createShaderPrograms(GLAutoDrawable glAutoDrawable) {
@@ -194,15 +154,28 @@ public class OpenGLFrame extends JFrame implements GLEventListener, MouseWheelLi
         return vfprogram;
     }
 
-    public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+    public void up() {
+        if (yAxis < 1.0) yAxis += 0.03;
     }
 
-    public void dispose(GLAutoDrawable drawable) {
+
+    public void down() {
+        if (yAxis > -1.0) yAxis -= 0.03;
+    }
+
+    public void changeColor() {
+        colorNumber += 1;
+        colorNumber %= 4;
+    }
+
+    @Override
+    public void reshape(GLAutoDrawable glAutoDrawable, int i, int i1, int i2, int i3) {
+
     }
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        if (e.getWheelRotation() < 0) sAmt += 0.1;
-        else if (sAmt > 0.2) sAmt -= 0.1;
+        if (e.getWheelRotation() < 0) scaleAmount += 0.1;
+        else if (scaleAmount > 0.2) scaleAmount -= 0.1;
     }
 }

@@ -1,5 +1,7 @@
 package a1.commands;
 
+import a1.GameWorld;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
@@ -8,6 +10,7 @@ import java.awt.event.ActionEvent;
  */
 public class ChangeColor extends AbstractAction {
     private static ChangeColor instance = null;
+    private GameWorld gameWorld;
 
     private ChangeColor() {
         super("Change Color");
@@ -18,8 +21,12 @@ public class ChangeColor extends AbstractAction {
         return instance;
     }
 
+    public void setTarget(GameWorld gameWorld) {
+        this.gameWorld = gameWorld;
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
-
+        gameWorld.changeColor();
     }
 }

@@ -13,18 +13,18 @@ import java.util.ArrayList;
 
 public class ButtonView extends JPanel {
     private ArrayList<JButton> buttons;
-    private JButton up, down, colorSwap;
+    private JButton up, down, changeColor;
 
     public ButtonView() {
         buttons = new ArrayList<>();
 
         up = new JButton(Up.getInstance());
         down = new JButton(Down.getInstance());
-        colorSwap = new JButton(ChangeColor.getInstance());
+        changeColor = new JButton(ChangeColor.getInstance());
 
         buttons.add(up);
         buttons.add(down);
-        buttons.add(colorSwap);
+        buttons.add(changeColor);
 
         for (JButton button : buttons) {
             this.add(button);

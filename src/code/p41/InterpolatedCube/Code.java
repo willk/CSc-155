@@ -31,6 +31,10 @@ public class Code extends JFrame implements GLEventListener {
         this.setVisible(true);
     }
 
+    public static void main(String[] args) {
+        new Code();
+    }
+
     public void display(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
 
@@ -120,10 +124,6 @@ public class Code extends JFrame implements GLEventListener {
         r.setElementAt(3, 2, C);
         rt = r.transpose();
         return rt;
-    }
-
-    public static void main(String[] args) {
-        new Code();
     }
 
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {

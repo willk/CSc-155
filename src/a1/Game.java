@@ -6,6 +6,7 @@ import a1.commands.Up;
 import a1.views.ButtonView;
 import a1.views.MapView;
 import a1.views.VersionView;
+import com.jogamp.opengl.util.FPSAnimator;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,12 +22,15 @@ public class Game extends JFrame {
     private MapView mv;
     private Package p = Package.getPackage("com.jogamp.opengl");
     private GameWorld gw;
+    private FPSAnimator fpsAnimator;
 
     public Game() {
         gw = new GameWorld();
         vv = new VersionView();
         bv = new ButtonView();
+        mv = new MapView();
         gw.initLayout();
+        gw.addObserver(mv);
 
         this.setTitle("William Kinderman - CSc 155 - A1");
         this.setSize(1280, 800);
@@ -37,13 +41,15 @@ public class Game extends JFrame {
         this.add(bv, BorderLayout.SOUTH);
         this.add(vv, BorderLayout.NORTH);
 
+        fpsAnimator = new FPSAnimator(mv, 120);
+        fpsAnimator.start();
+
         Up up = Up.getInstance();
         Down down = Down.getInstance();
         ChangeColor changeColor = ChangeColor.getInstance();
-
         up.setTarget(gw);
         down.setTarget(gw);
-        down.setTarget(gw);
+        changeColor.setTarget(gw);
 
         this.setVisible(true);
         this.requestFocus();

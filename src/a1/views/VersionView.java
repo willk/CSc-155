@@ -11,7 +11,7 @@ public class VersionView extends JPanel {
     private JLabel openGLVersion, JOGLVersion;
 
     public VersionView() {
-        openGLVersion = new JLabel("OpenGL Version: ");
+        openGLVersion = new JLabel("OpenGL Version: UNKNOWN");
         JOGLVersion = new JLabel("JOGL Version: " + p.getImplementationVersion());
 
         this.add(openGLVersion);
@@ -20,5 +20,9 @@ public class VersionView extends JPanel {
 
     public void updateOpenGLVersion(String s) {
         openGLVersion.setText("OpenGL Version: " + s);
+    }
+
+    public void updateJOGLVersion(String s) {
+        JOGLVersion.setText("JOGL Version: " + s);
     }
 }

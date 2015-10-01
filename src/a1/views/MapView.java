@@ -3,6 +3,7 @@ package a1.views;
 import a1.GameWorld;
 import a1.IObservable;
 import a1.IObserver;
+import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
@@ -23,6 +24,8 @@ import static com.jogamp.opengl.GL2ES3.GL_COLOR;
 public class MapView extends GLJPanel implements GLEventListener, MouseWheelListener, IObserver {
     private int renderer, VAO[], colorNumber;
     private float xAxis, yAxis, scaleAmount;
+    private boolean versionFlag;
+    private String glVersion, joglVersion;
     private GameWorld gameWorld;
 
     public MapView() {
@@ -32,6 +35,7 @@ public class MapView extends GLJPanel implements GLEventListener, MouseWheelList
         yAxis = 0;
         scaleAmount = 1;
         VAO = new int[1];
+        versionFlag = false;
 
         this.addMouseWheelListener(this);
         this.addGLEventListener(this);
@@ -42,11 +46,12 @@ public class MapView extends GLJPanel implements GLEventListener, MouseWheelList
         GL4 gl = (GL4) glAutoDrawable.getGL();
 
         // Get the OpenGL version number
-//        vv.updateOpenGLVersion(gl.glGetString(GL.GL_VERSION));
-//        System.out.println("OpenGL Version: " + gl.glGetString(GL.GL_VERSION) +
-//                " JOGL Version: " + p.getImplementationVersion());
+        glVersion = gl.glGetString(GL.GL_VERSION);
+        Package p = Package.getPackage("com.jogamp.opengl");
+        joglVersion = p.getImplementationVersion();
 
         renderer = createShaderPrograms(glAutoDrawable);
+
 
         gl.glGenVertexArrays(VAO.length, VAO, 0);
         gl.glBindVertexArray(VAO[0]);
@@ -160,9 +165,11 @@ public class MapView extends GLJPanel implements GLEventListener, MouseWheelList
     @Override
     public void update(IObservable o) {
         this.gameWorld = (GameWorld) o;
+        if (!versionFlag) {
+            versionFlag = true;
+            gameWorld.setVersion(glVersion, joglVersion);
+        }
         this.yAxis = gameWorld.getYAxis();
         this.colorNumber = gameWorld.getColorNumber();
     }
-
-
 }

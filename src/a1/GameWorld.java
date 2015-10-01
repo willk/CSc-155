@@ -1,26 +1,24 @@
 package a1;
 
+
 import java.util.ArrayList;
 
 /**
  * Created by willk on 9/29/2015.
  */
 
-/*
- * TODO:
- * move most of this class into the map view class.
- * hope that shit works.
- */
 public class GameWorld implements IObservable {
-    private float xAxis, yAxis, scaleAmount;
+    private float yAxis;
     private int colorNumber;
     private ArrayList<IObserver> observers;
+    private String glVersion, joglVersion;
 
     public void initLayout() {
         colorNumber = 0;
-        xAxis = 0;
         yAxis = 0;
-        scaleAmount = 1;
+
+        glVersion = "UNKNOWN";
+        joglVersion = "UNKNOWN";
 
         observers = new ArrayList<>();
     }
@@ -49,8 +47,10 @@ public class GameWorld implements IObservable {
         return this.yAxis;
     }
 
-    public float getXAxis() {
-        return this.getXAxis();
+    public void setVersion(String glVersion, String joglVersion) {
+        this.glVersion = glVersion;
+        this.joglVersion = joglVersion;
+        notifyObservers();
     }
 
     @Override
@@ -64,5 +64,13 @@ public class GameWorld implements IObservable {
         for (IObserver observer : observers) {
             observer.update(this);
         }
+    }
+
+    public String getGLVersion() {
+        return glVersion;
+    }
+
+    public String getJOGLVersion() {
+        return joglVersion;
     }
 }

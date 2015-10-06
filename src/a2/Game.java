@@ -1,5 +1,6 @@
-package a1;
+package a2;
 
+import a1.GameWorld;
 import a1.commands.ChangeColor;
 import a1.commands.Down;
 import a1.commands.Up;

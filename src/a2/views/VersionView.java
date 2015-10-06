@@ -1,4 +1,4 @@
-package a1.views;
+package a2.views;
 
 import a1.IObservable;
 import a1.IObserver;

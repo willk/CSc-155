@@ -1,8 +1,8 @@
 package a2.views;
 
-import a1.commands.ChangeColor;
-import a1.commands.Down;
-import a1.commands.Up;
+import a2.commands.ChangeColor;
+import a2.commands.Down;
+import a2.commands.Up;
 
 import javax.swing.*;
 import java.util.ArrayList;

@@ -1,8 +1,8 @@
 package a2.views;
 
-import a1.IObservable;
-import a1.IObserver;
-import a1.commands.GLVersion;
+import a2.IObservable;
+import a2.IObserver;
+import a2.commands.GLVersion;
 
 import javax.swing.*;
 

@@ -1,6 +1,6 @@
 package a2.commands;
 
-import a1.GameWorld;
+import a2.GameWorld;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

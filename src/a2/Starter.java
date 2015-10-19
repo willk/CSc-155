@@ -5,6 +5,6 @@ package a2;
  */
 public class Starter {
     public static void main(String[] args) {
-        a1.Game i = new a1.Game();
+        a2.Game i = new a2.Game();
     }
 }

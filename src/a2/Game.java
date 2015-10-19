@@ -1,12 +1,11 @@
 package a2;
 
-import a1.GameWorld;
-import a1.commands.ChangeColor;
-import a1.commands.Down;
-import a1.commands.Up;
-import a1.views.ButtonView;
-import a1.views.MapView;
-import a1.views.VersionView;
+import a2.commands.ChangeColor;
+import a2.commands.Down;
+import a2.commands.Up;
+import a2.views.ButtonView;
+import a2.views.MapView;
+import a2.views.VersionView;
 import com.jogamp.opengl.util.FPSAnimator;
 
 import javax.swing.*;
@@ -35,7 +34,7 @@ public class Game extends JFrame {
         gw.addObserver(vv);
         gw.notifyObservers();
 
-        this.setTitle("William Kinderman - CSc 155 - A1");
+        this.setTitle("William Kinderman - CSc 155 - A2");
         this.setSize(1280, 800);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);

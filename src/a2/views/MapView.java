@@ -1,9 +1,9 @@
 package a2.views;
 
-import a1.GameWorld;
-import a1.IObservable;
-import a1.IObserver;
-import a1.commands.GLVersion;
+import a2.GameWorld;
+import a2.IObservable;
+import a2.IObserver;
+import a2.commands.GLVersion;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -44,8 +44,8 @@ public class MapView extends GLJPanel implements GLEventListener, MouseWheelList
         fragmentCompiled = new int[1];
         linked = new int[1];
 
-        String vshaderSource[] = GLSLUtils.readShaderSource("src/a1/shaders/vertex.glsl");
-        String fshaderSource[] = GLSLUtils.readShaderSource("src/a1/shaders/fragment.glsl");
+        String vshaderSource[] = GLSLUtils.readShaderSource("src/a2/shaders/vertex.glsl");
+        String fshaderSource[] = GLSLUtils.readShaderSource("src/a2/shaders/fragment.glsl");
         int lengths[];
 
         int vShader = gl.glCreateShader(GL4.GL_VERTEX_SHADER);

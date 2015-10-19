@@ -1,9 +1,6 @@
 package a2;
 
 
-import a1.IObservable;
-import a1.IObserver;
-
 import java.util.ArrayList;
 
 /**

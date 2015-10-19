@@ -9,7 +9,7 @@ void main(void) {
     const vec4 v[3] = vec4[3] (
         vec4( 0.25 * scale, -0.25 * scale,  0.5, 1.0),
         vec4(-0.25 * scale, -0.25 * scale,  0.5, 1.0),
-        vec4( 0.25 * scale,  0.25 * scale, -0.5, 1.0)
+        vec4( 0.00 * scale,  0.25 * scale, -0.5, 1.0)
     );
 
     const vec4 colors[3] = vec4[3] (

@@ -1,8 +1,17 @@
 #version 430
 
-in vec4 color;
-out vec4 outColor;
+in vec2 tc;
+//in vec3 position;
+//in vec4 vColor;
+
+out vec4 fragColor;
+//out vec4 color;
+
+uniform mat4 mv_matrix;
+uniform mat4 proj_matrix;
+layout (binding = 0) uniform sampler2D s;
 
 void main(void) {
-    outColor = color;
+    fragColor = texture2D(s, tc);
+//    color = vColor;
 }

@@ -35,6 +35,7 @@ public class MapView extends GLJPanel implements GLEventListener, MouseWheelList
         VAO = new int[1];
         this.addMouseWheelListener(this);
         this.addGLEventListener(this);
+        System.out.println(this.getWidth());
     }
 
     private int createShaderPrograms(GLAutoDrawable glAutoDrawable) {

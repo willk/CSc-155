@@ -8,15 +8,15 @@ import java.awt.event.ActionEvent;
 /**
  * Created by willk on 10/20/2015.
  */
-public class Down extends AbstractAction {
-    private static Down ourInstance = new Down();
+public class Back extends AbstractAction {
+    private static Back ourInstance = new Back();
     private Camera c;
 
-    private Down() {
-        super("Move Down");
+    private Back() {
+        super("Move Back");
     }
 
-    public static Down getInstance() {
+    public static Back getInstance() {
         return ourInstance;
     }
 
@@ -26,6 +26,6 @@ public class Down extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        c.movey(-.25);
+        c.movez(-.25);
     }
 }

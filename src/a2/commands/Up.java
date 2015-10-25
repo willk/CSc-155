@@ -1,32 +1,31 @@
 package a2.commands;
 
-import a2.GameWorld;
+import a2.objects.Camera;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 
 /**
- * Created by willk on 9/22/2015.
+ * Created by willk on 10/20/2015.
  */
 public class Up extends AbstractAction {
-    private static Up instance = null;
-    private GameWorld gameWorld;
+    private static Up ourInstance = new Up();
+    private Camera c;
 
     private Up() {
-        super("Up");
+        super("Move up");
     }
 
     public static Up getInstance() {
-        if (instance == null) instance = new Up();
-        return instance;
+        return ourInstance;
     }
 
-    public void setTarget(GameWorld gameWorld) {
-        this.gameWorld = gameWorld;
+    public void setCamera(Camera c) {
+        this.c = c;
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        gameWorld.up();
+        c.movey(.25);
     }
 }

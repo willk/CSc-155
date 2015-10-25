@@ -6,17 +6,17 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 
 /**
- * Created by willk on 10/20/2015.
+ * Created by willk on 10/24/2015.
  */
-public class Down extends AbstractAction {
-    private static Down ourInstance = new Down();
+public class PanRight extends AbstractAction {
+    private static PanRight ourInstance = new PanRight();
     private Camera c;
 
-    private Down() {
-        super("Move Down");
+    private PanRight() {
+        super("Pan up.");
     }
 
-    public static Down getInstance() {
+    public static PanRight getInstance() {
         return ourInstance;
     }
 
@@ -26,6 +26,6 @@ public class Down extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        c.movey(-.25);
+        c.pan(.25);
     }
 }

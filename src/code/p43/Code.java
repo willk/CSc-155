@@ -1,5 +1,7 @@
 package code.p43;
 
+import a2.objects.Cube;
+import a2.objects.Sphere;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -24,6 +26,7 @@ public class Code extends JFrame implements GLEventListener {
     private float cameraX, cameraY, cameraZ;
     private float cubeLocX, cubeLocY, cubeLocZ;
     private float pyrLocX, pyrLocY, pyrLocZ;
+    private Sphere d = new Sphere(48);
     private GLSLUtils util = new GLSLUtils();
 
     public Code() {
@@ -40,6 +43,7 @@ public class Code extends JFrame implements GLEventListener {
 //                new Thread(new Runnable() { public void run() { animator.start(); }} );
 //        thread.start();
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        System.out.println(myCanvas.getHeight());
     }
 
     public static void main(String[] args) {
@@ -76,6 +80,7 @@ public class Code extends JFrame implements GLEventListener {
         // ----------------------  pyramid == sun
         mvStack.pushMatrix();
         mvStack.translate(pyrLocX, pyrLocY, pyrLocZ);
+        mvStack.scale(.5, .5, .5);
         mvStack.rotate((System.currentTimeMillis() % 3600) / 10.0, 1.0, 0.0, 0.0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, mvStack.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMat.getFloatValues(), 0);
@@ -85,7 +90,7 @@ public class Code extends JFrame implements GLEventListener {
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
-        gl.glDrawArrays(GL_TRIANGLES, 0, 18);
+        gl.glDrawArrays(GL_TRIANGLES, 0, d.getIndices().length);
         mvStack.popMatrix();
 
         //-----------------------  cube == planet
@@ -168,13 +173,20 @@ public class Code extends JFrame implements GLEventListener {
         gl.glGenVertexArrays(vao.length, vao, 0);
         gl.glBindVertexArray(vao[0]);
         gl.glGenBuffers(vbo.length, vbo, 0);
-
+        Cube c = new Cube();
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        FloatBuffer cubeBuf = FloatBuffer.wrap(cube_positions);
+        FloatBuffer cubeBuf = FloatBuffer.wrap(c.getVertexPositions());
         gl.glBufferData(GL.GL_ARRAY_BUFFER, cubeBuf.limit() * 4, cubeBuf, GL.GL_STATIC_DRAW);
 
+        float[] svalues = new float[d.getIndices().length * 3];
+        for (int i = 0; i < d.getIndices().length; i++) {
+            svalues[i * 3] = (float) (d.getVertices()[d.getIndices()[i]].getX());
+            svalues[i * 3 + 1] = (float) (d.getVertices()[d.getIndices()[i]].getY());
+            svalues[i * 3 + 2] = (float) (d.getVertices()[d.getIndices()[i]].getZ());
+        }
+
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
-        FloatBuffer pyrBuf = FloatBuffer.wrap(pyramid_positions);
+        FloatBuffer pyrBuf = FloatBuffer.wrap(svalues);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, pyrBuf.limit() * 4, pyrBuf, GL.GL_STATIC_DRAW);
     }
 
@@ -184,7 +196,7 @@ public class Code extends JFrame implements GLEventListener {
         float B = (n + f) / (n - f);
         float C = (2.0f * n * f) / (n - f);
         Matrix3D r = new Matrix3D();
-        Matrix3D rt = new Matrix3D();
+        Matrix3D rt; // = new Matrix3D();
         r.setElementAt(0, 0, A);
         r.setElementAt(1, 1, q);
         r.setElementAt(2, 2, B);
@@ -203,8 +215,8 @@ public class Code extends JFrame implements GLEventListener {
     private int createShaderPrograms(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
 
-        String vshaderSource[] = util.readShaderSource("src/code/p43/vert.glsl");
-        String fshaderSource[] = util.readShaderSource("src/code/p43/frag.glsl");
+        String vshaderSource[] = util.readShaderSource("src/a2/shaders/vertex.glsl");
+        String fshaderSource[] = util.readShaderSource("src/a2/shaders/fragment.glsl");
         int lengths[];
 
         int vShader = gl.glCreateShader(GL4.GL_VERTEX_SHADER);

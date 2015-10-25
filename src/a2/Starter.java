@@ -1,10 +1,10 @@
-package a1;
+package a2;
 
 /**
- * Created by willk on 9/22/2015.
+ * Created by willk on 10/24/2015.
  */
 public class Starter {
     public static void main(String[] args) {
-        Game i = new Game();
+        GLWorld w = new GLWorld();
     }
 }

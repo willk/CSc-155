@@ -90,7 +90,7 @@ public class Code extends JFrame implements GLEventListener {
 
     public void init(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
-        myObj = new ImportedModel("src/code/p63/shuttle.obj");
+        myObj = new ImportedModel("shuttle.obj");
         rendering_program = createShaderPrograms(drawable);
         setupVertices(gl);
         cameraX = 0.0f;
@@ -100,7 +100,7 @@ public class Code extends JFrame implements GLEventListener {
         objLocY = 0.0f;
         objLocZ = 0.0f;
 
-        woodTexture = tr.loadTexture(drawable, "src/code/p63/wood.jpg");
+        woodTexture = tr.loadTexture(drawable, "wood.jpg");
     }
 
     private void setupVertices(GL4 gl) {

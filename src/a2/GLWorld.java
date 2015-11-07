@@ -10,6 +10,7 @@ import com.jogamp.opengl.util.FPSAnimator;
 import graphicslib3D.GLSLUtils;
 import graphicslib3D.Matrix3D;
 import graphicslib3D.MatrixStack;
+import graphicslib3D.Vertex3D;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
@@ -47,7 +48,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         getContentPane().add(canvas);
 
         vao = new int[1];
-        vbo = new int[4];
+        vbo = new int[7];
 
         cube = new Cube();
         diamond = new Diamond();
@@ -104,29 +105,64 @@ public class GLWorld extends JFrame implements GLEventListener {
 
     // Puts the things into the VBOs
     private void setupVertices(GL4 gl) {
-        float[] sun = new float[sphere.getIndices().length * 3];
+        int[] sphereIndices = sphere.getIndices();
+        Vertex3D[] sphereVertices = sphere.getVertices();
+
+        float[] p = new float[sphereIndices.length * 3];
+        float[] t = new float[sphereIndices.length * 2];
+        float[] n = new float[sphereIndices.length * 3];
+
         for (int i = 0; i < sphere.getIndices().length; i++) {
-            sun[i * 3] = (float) (sphere.getVertices()[sphere.getIndices()[i]].getX());
-            sun[i * 3 + 1] = (float) (sphere.getVertices()[sphere.getIndices()[i]].getY());
-            sun[i * 3 + 2] = (float) (sphere.getVertices()[sphere.getIndices()[i]].getZ());
+            p[i * 3] = (float) (sphereVertices[sphereIndices[i]].getX());
+            p[i * 3 + 1] = (float) (sphereVertices[sphereIndices[i]].getY());
+            p[i * 3 + 2] = (float) (sphereVertices[sphereIndices[i]].getZ());
+
+            t[i * 2] = (float) (sphereVertices[sphereIndices[i]].getS());
+            t[i * 2 + 1] = (float) (sphereVertices[sphereIndices[i]].getT());
+
+            n[i * 3] = (float) (sphereVertices[sphereIndices[i]]).getNormalX();
+            n[i * 3 + 1] = (float) (sphereVertices[sphereIndices[i]]).getNormalY();
+            n[i * 3 + 2] = (float) (sphereVertices[sphereIndices[i]]).getNormalZ();
         }
 
         gl.glGenVertexArrays(vao.length, vao, 0);
         gl.glBindVertexArray(vao[0]);
         gl.glGenBuffers(vbo.length, vbo, 0);
 
+        // Sun
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-        FloatBuffer moonBuffer = FloatBuffer.wrap(cube.getVertexPositions());
-        gl.glBufferData(GL_ARRAY_BUFFER, moonBuffer.limit() * 4, moonBuffer, GL_STATIC_DRAW);
+        FloatBuffer sphereBuffer = FloatBuffer.wrap(p);
+        gl.glBufferData(GL_ARRAY_BUFFER, sphereBuffer.limit() * 4, sphereBuffer, GL_STATIC_DRAW);
 
-
+        // Sun TS
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-        FloatBuffer sunBuffer = FloatBuffer.wrap(sun);
-        gl.glBufferData(GL_ARRAY_BUFFER, sunBuffer.limit() * 4, sunBuffer, GL_STATIC_DRAW);
+        FloatBuffer texBuffer = FloatBuffer.wrap(t);
+        gl.glBufferData(GL_ARRAY_BUFFER, texBuffer.limit() * 4, texBuffer, GL_STATIC_DRAW);
 
+        // Sun Normal
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
-        FloatBuffer planetBuffer = FloatBuffer.wrap(diamond.getVertexPositions());
-        gl.glBufferData(GL_ARRAY_BUFFER, planetBuffer.limit() * 4, planetBuffer, GL_STATIC_DRAW);
+        FloatBuffer normalBuffers = FloatBuffer.wrap(t);
+        gl.glBufferData(GL_ARRAY_BUFFER, normalBuffers.limit() * 4, normalBuffers, GL_STATIC_DRAW);
+
+        // Cube
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+        FloatBuffer cubeBuffer = FloatBuffer.wrap(cube.getVertexPositions());
+        gl.glBufferData(GL_ARRAY_BUFFER, cubeBuffer.limit() * 4, cubeBuffer, GL_STATIC_DRAW);
+
+        // Cube TC
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        FloatBuffer cubeTCBuffer = FloatBuffer.wrap(cube.getVertexPositions());
+        gl.glBufferData(GL_ARRAY_BUFFER, cubeTCBuffer.limit() * 4, cubeTCBuffer, GL_STATIC_DRAW);
+
+        // Diamond
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
+        FloatBuffer diamondBuffer = FloatBuffer.wrap(diamond.getVertexPositions());
+        gl.glBufferData(GL_ARRAY_BUFFER, diamondBuffer.limit() * 4, diamondBuffer, GL_STATIC_DRAW);
+
+        // Diamond TC
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        FloatBuffer diamondTSBuffer = FloatBuffer.wrap(diamond.getVertexPositions());
+        gl.glBufferData(GL_ARRAY_BUFFER, diamondTSBuffer.limit() * 4, diamondTSBuffer, GL_STATIC_DRAW);
     }
 
     private Matrix3D perspective(float fovy, float aspect, float n, float f) {
@@ -214,15 +250,15 @@ public class GLWorld extends JFrame implements GLEventListener {
         s.scale(.25, .25, .25);
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-//        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
-//        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
-//        gl.glEnableVertexAttribArray(1);
-//        gl.glActiveTexture(GL_TEXTURE0);
-//        gl.glBindTexture(GL_TEXTURE_2D, earth);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, earth);
 
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CCW);
@@ -242,9 +278,16 @@ public class GLWorld extends JFrame implements GLEventListener {
         s.scale(.5, .5, .5);
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, p1);
+
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -262,9 +305,16 @@ public class GLWorld extends JFrame implements GLEventListener {
         s.scale(0.0625, 0.0625, 0.0625);
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, moon);
+
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -285,11 +335,11 @@ public class GLWorld extends JFrame implements GLEventListener {
         s.scale(.125, .125, .125);
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
         gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
         gl.glActiveTexture(GL_TEXTURE0);
@@ -306,9 +356,16 @@ public class GLWorld extends JFrame implements GLEventListener {
         s.translate(0, 1, 0);
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, p2);
+
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CW);
         gl.glEnable(GL_DEPTH_TEST);

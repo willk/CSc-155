@@ -2,6 +2,7 @@ package a3;
 
 import a3.commands.*;
 import a3.objects.Camera;
+import a3.objects.Cube;
 import a3.objects.ImportedModel;
 import a3.objects.TextureReader;
 import com.jogamp.opengl.GL4;
@@ -13,6 +14,7 @@ import graphicslib3D.GLSLUtils;
 import graphicslib3D.Matrix3D;
 import graphicslib3D.MatrixStack;
 import graphicslib3D.Vertex3D;
+import graphicslib3D.shape.Torus;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
@@ -23,22 +25,27 @@ import static com.jogamp.opengl.GL4.*;
 public class GLWorld extends JFrame implements GLEventListener {
     private JPanel panel;
     private GLCanvas canvas;
-    private int renderer, lineRenderer, vao[], vbo[], rusty;
+    private int renderer, lineRenderer, clipped_render, vao[], vbo[], flip_location;
     private Camera camera;
     private ImportedModel fish;
+    private Torus donut;
     private TextureReader tr;
-
-    private float sunx, suny, sunz;
+    private int cracked, rusty, frosty, fishy, yarn, jade;
+    private Cube cube;
     private boolean lines;
 
     public GLWorld() {
         this.setTitle("William Kinderman - CSc 155 - A3");
         this.setSize(800, 800);
 
+        // Setup models
+        fish = new ImportedModel("fish.obj");
+        donut = new Torus(4, 2, 48);
+        cube = new Cube();
+
         tr = new TextureReader();
         lines = true;
-        fish = new ImportedModel("fish.obj");
-        camera = new Camera(.25f, .25f, 5);
+        camera = new Camera(.25f, .25f, 25);
 
         panel = new JPanel();
         this.initWorld();
@@ -49,7 +56,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         getContentPane().add(canvas);
 
         vao = new int[1];
-        vbo = new int[7];
+        vbo = new int[9];
 
 
         this.setVisible(true);
@@ -103,17 +110,18 @@ public class GLWorld extends JFrame implements GLEventListener {
 
     // Puts the things into the VBOs
     private void setupVertices(GL4 gl) {
+        int[] fish_indices = fish.getIndices(), donut_indices = donut.getIndices();
+        Vertex3D[] fish_vertices = fish.getVertices(), donut_vertices = donut.getVertices();
+
         // THE FISH
-        int[] fish_indices = fish.getIndices();
-        Vertex3D[] fish_vertices = fish.getVertices();
-        float[] ff = new float[fish.getNumIndices() * 3];
+        float[] fp = new float[fish.getNumIndices() * 3];
         float[] ft = new float[fish.getNumIndices() * 2];
         float[] fn = new float[fish.getNumIndices() * 3];
 
         for (int i = 0; i < fish.getNumIndices(); i++) {
-            ff[i * 3] = (float) fish_vertices[fish_indices[i]].getX();
-            ff[i * 3 + 1] = (float) fish_vertices[fish_indices[i]].getY();
-            ff[i * 3 + 2] = (float) fish_vertices[fish_indices[i]].getZ();
+            fp[i * 3] = (float) fish_vertices[fish_indices[i]].getX();
+            fp[i * 3 + 1] = (float) fish_vertices[fish_indices[i]].getY();
+            fp[i * 3 + 2] = (float) fish_vertices[fish_indices[i]].getZ();
 
             ft[i * 2] = (float) fish_vertices[fish_indices[i]].getS();
             ft[i * 2 + 1] = (float) fish_vertices[fish_indices[i]].getT();
@@ -128,7 +136,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         gl.glGenBuffers(vbo.length, vbo, 0);
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-        FloatBuffer vBuffer = FloatBuffer.wrap(ff);
+        FloatBuffer vBuffer = FloatBuffer.wrap(fp);
         gl.glBufferData(GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL_STATIC_DRAW);
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
@@ -139,6 +147,51 @@ public class GLWorld extends JFrame implements GLEventListener {
         FloatBuffer nBuffer = FloatBuffer.wrap(fn);
         gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
         // END FISH
+
+        // THE DONUT
+        float[] dp = new float[fish.getNumIndices() * 3];
+        float[] dt = new float[fish.getNumIndices() * 2];
+        float[] dn = new float[fish.getNumIndices() * 3];
+
+        for (int i = 0; i < donut.getIndices().length; i++) {
+            dp[i * 3] = (float) donut_vertices[donut_indices[i]].getX();
+            dp[i * 3 + 1] = (float) donut_vertices[donut_indices[i]].getY();
+            dp[i * 3 + 2] = (float) donut_vertices[donut_indices[i]].getZ();
+
+            dt[i * 2] = (float) donut_vertices[donut_indices[i]].getS();
+            dt[i * 2 + 1] = (float) donut_vertices[donut_indices[i]].getT();
+
+            dn[i * 3] = (float) donut_vertices[donut_indices[i]].getNormalX();
+            dn[i * 3 + 1] = (float) donut_vertices[donut_indices[i]].getNormalY();
+            dn[i * 3 + 2] = (float) donut_vertices[donut_indices[i]].getNormalZ();
+        }
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+        vBuffer = FloatBuffer.wrap(dp);
+        gl.glBufferData(GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        tBuffer = FloatBuffer.wrap(dt);
+        gl.glBufferData(GL_ARRAY_BUFFER, tBuffer.limit() * 4, tBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
+        nBuffer = FloatBuffer.wrap(dn);
+        gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
+        // END DONUT
+
+        // The Cube
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        vBuffer = FloatBuffer.wrap(cube.getVertices());
+        gl.glBufferData(GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        tBuffer = FloatBuffer.wrap(cube.getTexals());
+        gl.glBufferData(GL_ARRAY_BUFFER, tBuffer.limit() * 4, tBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
+        nBuffer = FloatBuffer.wrap(cube.getNormals());
+        gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
+        // END Cube
     }
 
     private Matrix3D perspective(float fovy, float aspect, float n, float f) {
@@ -198,6 +251,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         float aspect;
         Matrix3D pMatrix;
 
+        // Need this to clear the coordinate planes that are drawn.
         gl.glClear(GL_DEPTH_BUFFER_BIT);
         FloatBuffer background = FloatBuffer.allocate(4);
         gl.glClearBufferfv(GL_COLOR, 0, background);
@@ -216,29 +270,122 @@ public class GLWorld extends JFrame implements GLEventListener {
         MatrixStack s = new MatrixStack(20);
         s.pushMatrix(); // Push camera Matrix
         s.loadMatrix(camera.getVTM()); // apply camera transforms
-//        double amt = (double) (System.currentTimeMillis() % 360000) / 1000.0;
+//        double amt = (float) (System.currentTimeMillis() % 3600) / 1000.0;
+        float amt = (float) (System.currentTimeMillis() % 36000) * (float) (Math.pow(2, -10));
+
+        // THE CLIPPING
+        flip_location = gl.glGetUniformLocation(clipped_render, "flipNormal");
 
         // THE Fish
         s.pushMatrix();
-        s.translate(0, 0, 0);
+        s.translate(0, Math.sin(amt) * 10, 0);
+
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
         gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, rusty);
+        gl.glBindTexture(GL_TEXTURE_2D, fishy);
 
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDepthFunc(GL_LEQUAL);
 
-        gl.glDrawArrays(GL_TRIANGLES, 0, fish.getIndices().length);
+        gl.glDrawArrays(GL_TRIANGLES, 0, fish.getNumIndices());
         s.popMatrix(); // POP FISH TRANSLATE
+
+        // The Donut
+        gl.glUseProgram(clipped_render); // added
+
+        mv_loc = gl.glGetUniformLocation(clipped_render, "mv_matrix"); // added
+        proj_loc = gl.glGetUniformLocation(clipped_render, "proj_matrix"); // added
+
+        // Start First Draw
+        s.pushMatrix();
+        s.translate(0, 0, 0);
+
+        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, frosty);
+
+        gl.glUniform1i(flip_location, 0);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glDepthFunc(GL_LEQUAL);
+        gl.glFrontFace(GL_CCW);
+        // End First Draw
+
+        // Start Second Draw
+        s.pushMatrix();
+        s.translate(0, 0, 0);
+
+        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, frosty);
+
+        gl.glUniform1i(flip_location, 1);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glEnable(GL_CULL_FACE);
+        gl.glDepthFunc(GL_LEQUAL);
+        gl.glFrontFace(GL_CW);
+
+        gl.glDrawArrays(GL_TRIANGLES, 0, donut.getIndices().length);
+        s.popMatrix(); // POP Donut Translate
+        // END Second Draw
+
+        // END DONUT
+
+        // CUBES
+        gl.glUseProgram(renderer);
+
+        mv_loc = gl.glGetUniformLocation(renderer, "mv_matrix");
+        proj_loc = gl.glGetUniformLocation(renderer, "proj_matrix");
+
+        // Cube 1
+        s.pushMatrix();
+        s.translate(0, 10, 5);
+
+        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, jade);
+
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CW);
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDepthFunc(GL_LEQUAL);
+
+        gl.glDrawArrays(GL_TRIANGLES, 0, donut.getIndices().length);
+        s.popMatrix(); // POP Cube translate
 
         if (lines) {
             gl.glUseProgram(lineRenderer);
@@ -252,12 +399,18 @@ public class GLWorld extends JFrame implements GLEventListener {
 
     public void init(GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
+        gl.glEnable(GL_CLIP_DISTANCE0);
+
         renderer = createShaderPrograms(d, "src/a3/shaders/vertex.glsl", "src/a3/shaders/fragment.glsl");
+        clipped_render = createShaderPrograms(d, "src/a3/shaders/clipped_vertex.glsl", "src/a3/shaders/clipped_fragment.glsl");
         lineRenderer = createShaderPrograms(d, "src/a3/shaders/lineVertex.glsl", "src/a3/shaders/lineFragment.glsl");
 
         setupVertices(gl);
 
-        rusty = tr.loadTexture(d, "src/a3/textures/rusty.jpg");
+        cracked = tr.loadTexture(d, "src/a3/textures/cracked.jpg");
+        frosty = tr.loadTexture(d, "src/a3/textures/donut.jpg");
+        fishy = tr.loadTexture(d, "src/a3/textures/fish.jpg");
+        jade = tr.loadTexture(d, "src/a3/textures/jade.jpg");
     }
 
     public void reshape(GLAutoDrawable d, int x, int y, int width, int height) {
@@ -269,4 +422,5 @@ public class GLWorld extends JFrame implements GLEventListener {
     public void toggleLines() {
         lines = !lines;
     }
+
 }

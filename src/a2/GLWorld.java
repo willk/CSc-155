@@ -61,6 +61,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
+    @SuppressWarnings("Duplicates")
     private void initWorld() {
         Forward.getInstance().setCamera(camera);
         Back.getInstance().setCamera(camera);
@@ -275,7 +276,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         s.pushMatrix();
         s.rotate((System.currentTimeMillis() % 3600) / 5, 0, 1, 0);
         s.pushMatrix();
-        s.scale(.5, .5, .5);
+        s.scale(.25, .25, .25);
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);

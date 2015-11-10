@@ -45,8 +45,9 @@ public class TextureReader {
         );
 
         // enable linear filtering for minification (or else default is MUST use MIPMaps...)
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
-
+//        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR);
+        gl.glGenerateMipmap(GL.GL_TEXTURE_2D);
         return textureID;
     }
 

@@ -270,12 +270,11 @@ public class GLWorld extends JFrame implements GLEventListener {
         MatrixStack s = new MatrixStack(20);
         s.pushMatrix(); // Push camera Matrix
         s.loadMatrix(camera.getVTM()); // apply camera transforms
-//        double amt = (float) (System.currentTimeMillis() % 3600) / 1000.0;
+
         float amt = (float) (System.currentTimeMillis() % 36000) * (float) (Math.pow(2, -10));
 
-        // THE CLIPPING
-        flip_location = gl.glGetUniformLocation(clipped_render, "flipNormal");
 
+        /*---------------------------------- FISH --------------------------------------------------------------------*/
         // THE Fish
         s.pushMatrix();
         s.translate(0, Math.sin(amt) * 10, 0);
@@ -299,16 +298,22 @@ public class GLWorld extends JFrame implements GLEventListener {
 
         gl.glDrawArrays(GL_TRIANGLES, 0, fish.getNumIndices());
         s.popMatrix(); // POP FISH TRANSLATE
+        /*-------------------------------END FISH --------------------------------------------------------------------*/
 
-        // The Donut
-        gl.glUseProgram(clipped_render); // added
+        /*--------------------------------- DONUT --------------------------------------------------------------------*/
 
-        mv_loc = gl.glGetUniformLocation(clipped_render, "mv_matrix"); // added
-        proj_loc = gl.glGetUniformLocation(clipped_render, "proj_matrix"); // added
+        // THE CLIPPING
+        gl.glEnable(GL_CLIP_DISTANCE0);
+        gl.glUseProgram(clipped_render);
+        mv_loc = gl.glGetUniformLocation(clipped_render, "mv_matrix");
+        proj_loc = gl.glGetUniformLocation(clipped_render, "proj_matrix");
+        flip_location = gl.glGetUniformLocation(clipped_render, "flipNormal");
 
         // Start First Draw
         s.pushMatrix();
-        s.translate(0, 0, 0);
+        s.translate(0, 0, 10);
+        s.pushMatrix();
+        s.scale(.25, .25, .25);
 
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
@@ -330,9 +335,6 @@ public class GLWorld extends JFrame implements GLEventListener {
         // End First Draw
 
         // Start Second Draw
-        s.pushMatrix();
-        s.translate(0, 0, 0);
-
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
@@ -352,20 +354,17 @@ public class GLWorld extends JFrame implements GLEventListener {
         gl.glFrontFace(GL_CW);
 
         gl.glDrawArrays(GL_TRIANGLES, 0, donut.getIndices().length);
-        s.popMatrix(); // POP Donut Translate
         // END Second Draw
 
-        // END DONUT
+        s.popMatrix(); // POP Donut Scale
+        s.popMatrix(); // POP Donut Translate
 
-        // CUBES
-        gl.glUseProgram(renderer);
+        gl.glDisable(GL_CLIP_DISTANCE0);
+        /*----------------------------- END DONUT --------------------------------------------------------------------*/
 
-        mv_loc = gl.glGetUniformLocation(renderer, "mv_matrix");
-        proj_loc = gl.glGetUniformLocation(renderer, "proj_matrix");
-
-        // Cube 1
+        /*--------------------------------- CUBES --------------------------------------------------------------------*/
         s.pushMatrix();
-        s.translate(0, 10, 5);
+        s.translate(0, 0, 10);
 
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
@@ -386,6 +385,7 @@ public class GLWorld extends JFrame implements GLEventListener {
 
         gl.glDrawArrays(GL_TRIANGLES, 0, donut.getIndices().length);
         s.popMatrix(); // POP Cube translate
+        /*----------------------------- END CUBES --------------------------------------------------------------------*/
 
         if (lines) {
             gl.glUseProgram(lineRenderer);
@@ -399,7 +399,6 @@ public class GLWorld extends JFrame implements GLEventListener {
 
     public void init(GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
-        gl.glEnable(GL_CLIP_DISTANCE0);
 
         renderer = createShaderPrograms(d, "src/a3/shaders/vertex.glsl", "src/a3/shaders/fragment.glsl");
         clipped_render = createShaderPrograms(d, "src/a3/shaders/clipped_vertex.glsl", "src/a3/shaders/clipped_fragment.glsl");

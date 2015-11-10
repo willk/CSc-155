@@ -11,10 +11,11 @@ uniform vec4 clip_plane = vec4(0.0, 0.0, 1.0, 0.2);
 uniform int flipNormal;
 
 void main(void) {
-    gl_ClipDistance[0] = dot(vertPos, clip_plane);
+    gl_ClipDistance[0] = dot(position, clip_plane);
 
     if (flipNormal==1) varyingNormal = -varyingNormal;
 
     gl_Position = proj_matrix * mv_matrix * vec4(position, 1.0);
+
     tc = tCoord;
 }

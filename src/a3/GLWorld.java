@@ -47,6 +47,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         // Setup models
         fish = new ImportedModel("fish.obj");
         torus = new Torus(4, 2, 48);
+        sphere = new Sphere(48);
         cube = new Cube();
 
         tr = new TextureReader();
@@ -62,7 +63,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         getContentPane().add(canvas);
 
         vao = new int[1];
-        vbo = new int[9];
+        vbo = new int[12];
 
 
         this.setVisible(true);
@@ -116,8 +117,8 @@ public class GLWorld extends JFrame implements GLEventListener {
 
     // Puts the things into the VBOs
     private void setupVertices(GL4 gl) {
-        int[] fish_indices = fish.getIndices(), donut_indices = torus.getIndices();
-        Vertex3D[] fish_vertices = fish.getVertices(), donut_vertices = torus.getVertices();
+        int[] fish_indices = fish.getIndices(), donut_indices = torus.getIndices(), sphere_indices = sphere.getIndices();
+        Vertex3D[] fish_vertices = fish.getVertices(), donut_vertices = torus.getVertices(), sphere_vertices = sphere.getVertices();
 
         // THE FISH
         float[] fp = new float[fish.getNumIndices() * 3];
@@ -155,9 +156,9 @@ public class GLWorld extends JFrame implements GLEventListener {
         // END FISH
 
         // THE DONUT
-        float[] dp = new float[fish.getNumIndices() * 3];
-        float[] dt = new float[fish.getNumIndices() * 2];
-        float[] dn = new float[fish.getNumIndices() * 3];
+        float[] dp = new float[torus.getIndices().length * 3];
+        float[] dt = new float[torus.getIndices().length * 2];
+        float[] dn = new float[torus.getIndices().length * 3];
 
         for (int i = 0; i < torus.getIndices().length; i++) {
             dp[i * 3] = (float) donut_vertices[donut_indices[i]].getX();
@@ -198,6 +199,38 @@ public class GLWorld extends JFrame implements GLEventListener {
         nBuffer = FloatBuffer.wrap(cube.getNormals());
         gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
         // END Cube
+
+        // The Sphere
+        float[] sp = new float[sphere.getIndices().length * 3];
+        float[] st = new float[sphere.getIndices().length * 2];
+        float[] sn = new float[sphere.getIndices().length * 3];
+
+        for (int i = 0; i < sphere.getIndices().length; i++) {
+            sp[i * 3] = (float) sphere_vertices[sphere_indices[i]].getX();
+            sp[i * 3 + 1] = (float) sphere_vertices[sphere_indices[i]].getY();
+            sp[i * 3 + 2] = (float) sphere_vertices[sphere_indices[i]].getZ();
+
+            st[i * 2] = (float) sphere_vertices[sphere_indices[i]].getS();
+            st[i * 2 + 1] = (float) sphere_vertices[sphere_indices[i]].getT();
+
+            sn[i * 3] = (float) sphere_vertices[sphere_indices[i]].getNormalX();
+            sn[i * 3 + 1] = (float) sphere_vertices[sphere_indices[i]].getNormalY();
+            sn[i * 3 + 2] = (float) sphere_vertices[sphere_indices[i]].getNormalZ();
+        }
+        // END Sphere
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[9]);
+        vBuffer = FloatBuffer.wrap(sp);
+        gl.glBufferData(GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[10]);
+        tBuffer = FloatBuffer.wrap(st);
+        gl.glBufferData(GL_ARRAY_BUFFER, tBuffer.limit() * 4, tBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[11]);
+        nBuffer = FloatBuffer.wrap(sn);
+        gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
+
     }
 
     private Matrix3D perspective(float fovy, float aspect, float n, float f) {
@@ -288,8 +321,8 @@ public class GLWorld extends JFrame implements GLEventListener {
 
         /*--------------------------------- DONUT --------------------------------------------------------------------*/
         gl.glUseProgram(clipRenderer);
-//        flip_location = gl.glGetUniformLocation(clipRenderer, "flipNormal");
 
+//        flip_location = gl.glGetUniformLocation(clipRenderer, "flipNormal");
         mv_loc = gl.glGetUniformLocation(clipRenderer, "mv_loc");
         proj_loc = gl.glGetUniformLocation(clipRenderer, "proj_loc");
 
@@ -310,26 +343,26 @@ public class GLWorld extends JFrame implements GLEventListener {
         gl.glBindTexture(GL_TEXTURE_2D, concrete);
 
 //        gl.glUniform1i(flip_location, 0);
-        gl.glFrontFace(GL_CW);
+        gl.glFrontFace(GL_CCW);
         gl.glDrawArrays(GL_TRIANGLES, 0, torus.getIndices().length);
         // END FIRST Draw
 
         // SECOND Draw
-        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
-        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(0);
-
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
-        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(1);
-        gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, concrete);
-
+//        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
+//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+//        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+//        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+//        gl.glEnableVertexAttribArray(0);
+//
+//        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+//        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+//        gl.glEnableVertexAttribArray(1);
+//        gl.glActiveTexture(GL_TEXTURE0);
+//        gl.glBindTexture(GL_TEXTURE_2D, concrete);
+//
 //        gl.glUniform1i(flip_location, 1);
-        gl.glFrontFace(GL_CW);
-        gl.glDrawArrays(GL_TRIANGLES, 0, torus.getIndices().length);
+//        gl.glFrontFace(GL_CW);
+//        gl.glDrawArrays(GL_TRIANGLES, 0, torus.getIndices().length);
         // END Second Draw
 
         s.popMatrix(); // POP Donut Translate

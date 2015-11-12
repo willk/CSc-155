@@ -395,8 +395,8 @@ public class GLWorld extends JFrame implements GLEventListener {
 
     public void init(GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
-        renderer = createShaderPrograms(d, "src/a2/shaders/vertex.glsl", "src/a2/shaders/fragment.glsl");
-        lineRenderer = createShaderPrograms(d, "src/a2/shaders/lineVertex.glsl", "src/a2/shaders/lineFragment.glsl");
+        renderer = createShaderPrograms(d, "src/a2/shaders/default_vertex.glsl", "src/a2/shaders/default_fragment.glsl");
+        lineRenderer = createShaderPrograms(d, "src/a2/shaders/line_vertex.glsl", "src/a2/shaders/line_fragment.glsl");
 
         setupVertices(gl);
 

@@ -48,6 +48,12 @@ public class TextureReader {
 //        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR_MIPMAP_LINEAR);
         gl.glGenerateMipmap(GL.GL_TEXTURE_2D);
+
+        if (gl.isExtensionAvailable("GL_EXT_texture_filter_anisotropic")) {
+            float aniso[] = new float[1];
+            gl.glGetFloatv(GL.GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, aniso, 0);
+            gl.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso[0]);
+        }
         return textureID;
     }
 

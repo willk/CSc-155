@@ -15,10 +15,8 @@ import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.awt.GLCanvas;
 import com.jogamp.opengl.util.FPSAnimator;
-import graphicslib3D.GLSLUtils;
-import graphicslib3D.Matrix3D;
-import graphicslib3D.MatrixStack;
-import graphicslib3D.Vertex3D;
+import graphicslib3D.*;
+import graphicslib3D.light.PositionalLight;
 import graphicslib3D.shape.Torus;
 
 import javax.swing.*;
@@ -30,28 +28,25 @@ import static com.jogamp.opengl.GL4.*;
 public class GLWorld extends JFrame implements GLEventListener {
     private JPanel panel;
     private GLCanvas canvas;
-    private int renderer, lineRenderer, lightRenderer, clipRenderer, vao[], vbo[], flip_location;
+    private int renderer, lineRenderer, lightRenderer, clipRenderer, lightOffRenderer, vao[], vbo[], flip_location;
     private Camera camera;
     private Cube cube;
     private Sphere sphere;
     private Torus torus;
     private ImportedModel fish;
     private TextureReader tr;
-    private int fishy, jade, concrete, rusty, cracked, yarn;
-    private boolean lines;
+    private Material jade_material, gold_material;
+    private boolean lines, lights;
+    private float[] globalAmbient;
+    private PositionalLight light;
+    private Point3D light_position;
+
+    private int fishy_texture, jade_texture, concrete_texture, gold_texture, rusty_texture, cracked_texture, yarn_texture, water_texture;
 
     public GLWorld() {
         this.setTitle("William Kinderman - CSc 155 - A3");
         this.setSize(800, 800);
 
-        // Setup models
-        fish = new ImportedModel("fish.obj");
-        torus = new Torus(4, 2, 48);
-        sphere = new Sphere(48);
-        cube = new Cube();
-
-        tr = new TextureReader();
-        lines = true;
         camera = new Camera(.25f, .25f, 25);
 
         panel = new JPanel();
@@ -61,10 +56,6 @@ public class GLWorld extends JFrame implements GLEventListener {
         canvas.addGLEventListener(this);
         getContentPane().add(panel);
         getContentPane().add(canvas);
-
-        vao = new int[1];
-        vbo = new int[12];
-
 
         this.setVisible(true);
         FPSAnimator fpsAnimator = new FPSAnimator(canvas, 120);
@@ -84,6 +75,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         PanLeft.getInstance().setCamera(camera);
         PitchDown.getInstance().setCamera(camera);
         PitchUp.getInstance().setCamera(camera);
+        Lights.getInstance().setTarget(this);
         WorldAxes.getInstance().setTarget(this);
 
         InputMap inputMap = panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -99,6 +91,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, 0), KeyEvent.VK_Q);
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_E, 0), KeyEvent.VK_E);
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), KeyEvent.VK_ESCAPE);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), KeyEvent.VK_L);
 
         ActionMap actionMap = panel.getActionMap();
         actionMap.put(KeyEvent.VK_SPACE, WorldAxes.getInstance());
@@ -113,6 +106,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         actionMap.put(KeyEvent.VK_A, StrafeLeft.getInstance());
         actionMap.put(KeyEvent.VK_D, StrafeRight.getInstance());
         actionMap.put(KeyEvent.VK_ESCAPE, Quit.getInstance());
+        actionMap.put(KeyEvent.VK_L, Lights.getInstance());
     }
 
     // Puts the things into the VBOs
@@ -298,7 +292,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         GL4 gl = (GL4) d.getGL();
 
         Matrix3D pMatrix;
-        int mv_loc, proj_loc;
+        int mv_loc, proj_loc, n_loc;
         float amt = (float) (System.currentTimeMillis() % 36000) * (float) (Math.pow(2, -10)), aspect;
 
         // Need this to clear the coordinate planes that are drawn.
@@ -318,95 +312,64 @@ public class GLWorld extends JFrame implements GLEventListener {
         s.pushMatrix(); // Push camera Matrix
         s.multMatrix(camera.getVTM()); // apply camera transforms
 
-
-        /*--------------------------------- DONUT --------------------------------------------------------------------*/
-        gl.glUseProgram(clipRenderer);
-
-//        flip_location = gl.glGetUniformLocation(clipRenderer, "flipNormal");
-        mv_loc = gl.glGetUniformLocation(clipRenderer, "mv_loc");
-        proj_loc = gl.glGetUniformLocation(clipRenderer, "proj_loc");
-
-        s.pushMatrix();
-        s.translate(0, -5, 0);
-
-        // FIRST Draw
-        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
-        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(0);
-
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
-        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
-        gl.glEnableVertexAttribArray(1);
-        gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, concrete);
-
-//        gl.glUniform1i(flip_location, 0);
-        gl.glFrontFace(GL_CCW);
-        gl.glDrawArrays(GL_TRIANGLES, 0, torus.getIndices().length);
-        // END FIRST Draw
-
-        // SECOND Draw
-//        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
-//        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
-//        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
-//        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-//        gl.glEnableVertexAttribArray(0);
-//
-//        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
-//        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
-//        gl.glEnableVertexAttribArray(1);
-//        gl.glActiveTexture(GL_TEXTURE0);
-//        gl.glBindTexture(GL_TEXTURE_2D, concrete);
-//
-//        gl.glUniform1i(flip_location, 1);
-//        gl.glFrontFace(GL_CW);
-//        gl.glDrawArrays(GL_TRIANGLES, 0, torus.getIndices().length);
-        // END Second Draw
-
-        s.popMatrix(); // POP Donut Translate
-
-        /* DISABLE CLIPPING */
-//        gl.glUseProgram(renderer);
-//        gl.glUseProgram(renderer);
-//        gl.glDisable(GL_CLIP_DISTANCE0);
-//        mv_loc = gl.glGetUniformLocation(renderer, "mv_loc");
-//        proj_loc = gl.glGetUniformLocation(renderer, "proj_loc");
-
-        /*----------------------------- END DONUT --------------------------------------------------------------------*/
-
+        /* DEFAULT renderer */
         gl.glUseProgram(renderer);
         mv_loc = gl.glGetUniformLocation(renderer, "mv_matrix");
         proj_loc = gl.glGetUniformLocation(renderer, "proj_matrix");
-        /*---------------------------------- FISH --------------------------------------------------------------------*/
-        // THE Fish
+        n_loc = gl.glGetUniformLocation(renderer, "n_matrix");
+
+        /* Lighting */
+        light.setPosition(light_position);
+        create_lighting(d, s.peek(), renderer);
+        /* End Lighting */
+        /* END DEFAULT renderer */
+
+
+        /* Fish */
+        /* vbo 0, 1, 2 */
         s.pushMatrix();
         s.translate(Math.sin(amt) * 3, Math.sin(amt) * 2, Math.cos(amt) * 3);
+        s.pushMatrix();
+        s.rotate(amt * Math.pow(2, 5), Math.sin(amt), Math.sin(amt), Math.sin(amt));
 
+        // Taking the top of the Stack and putting it in the Uniform
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_loc, 1, false, s.peek().inverse().transpose().getFloatValues(), 0);
+
+        // I am working with this buffer
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        // (location = 0, take in 3 at a time, floats, *, *, *);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        // Enable location = 0
         gl.glEnableVertexAttribArray(0);
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
         gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, fishy);
+        gl.glBindTexture(GL_TEXTURE_2D, fishy_texture);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+        gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
 
         gl.glFrontFace(GL_CCW);
         gl.glDrawArrays(GL_TRIANGLES, 0, fish.getNumIndices());
-        s.popMatrix(); // POP FISH TRANSLATE
-        /*-------------------------------END FISH --------------------------------------------------------------------*/
 
+        s.popMatrix();
+        s.popMatrix();
+        /* End Fish */
 
-        /*--------------------------------- CUBES --------------------------------------------------------------------*/
+        /* Box */
+        /* vbo 6, 7, 8 */
         s.pushMatrix();
-        s.translate(5, 0, 10);
+        s.translate(-5, 0, 5);
+
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_loc, 1, false, s.peek().inverse().transpose().getFloatValues(), 0);
+
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
@@ -415,30 +378,133 @@ public class GLWorld extends JFrame implements GLEventListener {
         gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
         gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, jade);
+        gl.glBindTexture(GL_TEXTURE_2D, jade_texture);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
+        gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
 
         gl.glFrontFace(GL_CW);
         gl.glDrawArrays(GL_TRIANGLES, 0, cube.getVertices().length);
 
-        s.popMatrix(); // POP Cube translate
+        s.popMatrix();
+        /* End Box */
 
-        /*----------------------------- END CUBES --------------------------------------------------------------------*/
-
-        /*------------------------------ Lights ----------------------------------------------------------------------*/
+        /* Torus */
+        /* vbo 3, 4, 5*/
         s.pushMatrix();
-        s.translate(5, 5, 10);
-        gl.glPointSize(30f);
-        gl.glUseProgram(lightRenderer);
-        mv_loc = gl.glGetUniformLocation(lightRenderer, "mv_matrix");
-        proj_loc = gl.glGetUniformLocation(lightRenderer, "proj_matrix");
+        s.translate(0, 0, 15);
+        s.pushMatrix();
+        s.scale(.25, .25, .25);
+
         gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_loc, 1, false, s.peek().inverse().transpose().getFloatValues(), 0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        /* First Draw */
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, gold_texture);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
+        gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+        gl.glFrontFace(GL_CCW);
+        gl.glDrawArrays(GL_TRIANGLES, 0, sphere.getIndices().length);
+
+        s.popMatrix();
+        s.popMatrix();
+        /* End Torus */
+
+        /* Clip Renderer */
+        gl.glUseProgram(clipRenderer);
+        mv_loc = gl.glGetUniformLocation(clipRenderer, "mv_matrix");
+        proj_loc = gl.glGetUniformLocation(clipRenderer, "proj_matrix");
+        n_loc = gl.glGetUniformLocation(clipRenderer, "n_matrix");
+
+        /* Lighting */
+        light.setPosition(light_position);
+        create_lighting(d, s.peek(), clipRenderer);
+        /* End Lighting */
+        /* End Clip Renderer*/
+
+        /* Sphere */
+        /* vbo 9, 10, 11*/
+        s.pushMatrix();
+        s.scale(10, 5, 8.5);
+
+        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_loc, 1, false, s.peek().inverse().transpose().getFloatValues(), 0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[9]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        /* First Draw */
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[10]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, concrete_texture);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[11]);
+        gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+        gl.glFrontFace(GL_CCW);
+        gl.glDrawArrays(GL_TRIANGLES, 0, sphere.getIndices().length);
+        /* End First Draw*/
+
+        /* Second Draw */
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[10]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, water_texture);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[11]);
+        gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+        gl.glFrontFace(GL_CW);
+        gl.glDrawArrays(GL_TRIANGLES, 0, sphere.getIndices().length);
+        /* End Second Draw */
+
+        s.popMatrix();
+        /* End Sphere */
+
+        /* Light */
+        s.pushMatrix();
+        s.translate(light_position.getX(), light_position.getY(), light_position.getZ());
+        gl.glPointSize(30f);
+
+        if (lights) {
+            gl.glUseProgram(lightRenderer);
+            mv_loc = gl.glGetUniformLocation(lightRenderer, "mv_matrix");
+            proj_loc = gl.glGetUniformLocation(lightRenderer, "proj_matrix");
+        } else {
+            gl.glUseProgram(lightOffRenderer);
+            mv_loc = gl.glGetUniformLocation(lightOffRenderer, "mv_matrix");
+            proj_loc = gl.glGetUniformLocation(lightOffRenderer, "proj_matrix");
+        }
+        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+
         gl.glDrawArrays(GL_POINTS, 0, 1);
         gl.glPointSize(1f);
+
         s.popMatrix();
+        /* End Light */
 
-        /*-------------------------- END Lights ----------------------------------------------------------------------*/
-
+        /* Lines */
         if (lines) {
             gl.glUseProgram(lineRenderer);
             mv_loc = gl.glGetUniformLocation(lineRenderer, "mv_matrix");
@@ -447,27 +513,85 @@ public class GLWorld extends JFrame implements GLEventListener {
             gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
             gl.glDrawArrays(GL_LINES, 0, 6);
         }
+        /* End Lines */
+    }
+
+    private void create_lighting(GLAutoDrawable d, Matrix3D s, int r) {
+        GL4 gl = (GL4) d.getGL();
+
+        Point3D lp = light.getPosition();
+        Point3D lpv = lp.mult(s);
+        Material m = gold_material;
+
+        float[] currentLightPosition = new float[]{(float) lpv.getX(), (float) lpv.getY(), (float) lpv.getZ()};
+
+        // sets the current global ambient settings
+        int globalAmbientLocation = gl.glGetUniformLocation(r, "globalAmbient");
+        gl.glProgramUniform4fv(r, globalAmbientLocation, 1, globalAmbient, 0);
+
+        // get the locs of the light and mats fields from the shader
+        int ambientLocation, diffuseLocation, spectralLocation, position, mAmbientLocation, mDiffuseLocation, mSpectralLocation, mShinyLocation;
+        ambientLocation = gl.glGetUniformLocation(r, "light.ambient");
+        diffuseLocation = gl.glGetUniformLocation(r, "light.diffuse");
+        spectralLocation = gl.glGetUniformLocation(r, "light.specular");
+        position = gl.glGetUniformLocation(r, "light.position");
+        mAmbientLocation = gl.glGetUniformLocation(r, "material.ambient");
+        mDiffuseLocation = gl.glGetUniformLocation(r, "material.diffuse");
+        mSpectralLocation = gl.glGetUniformLocation(r, "material.specular");
+        mShinyLocation = gl.glGetUniformLocation(r, "material.shininess");
+
+        // set the values in the shaders
+        gl.glProgramUniform4fv(r, ambientLocation, 1, light.getAmbient(), 0);
+        gl.glProgramUniform4fv(r, diffuseLocation, 1, light.getDiffuse(), 0);
+        gl.glProgramUniform4fv(r, spectralLocation, 1, light.getSpecular(), 0);
+        gl.glProgramUniform3fv(r, position, 1, currentLightPosition, 0);
+        gl.glProgramUniform4fv(r, mAmbientLocation, 1, m.getAmbient(), 0);
+        gl.glProgramUniform4fv(r, mDiffuseLocation, 1, m.getDiffuse(), 0);
+        gl.glProgramUniform4fv(r, mSpectralLocation, 1, m.getSpecular(), 0);
+        gl.glProgramUniform1f(r, mShinyLocation, m.getShininess());
+
     }
 
     public void init(GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
+
+        // Setup models
+        fish = new ImportedModel("fish.obj");
+        torus = new Torus(4, 2, 48);
+        sphere = new Sphere(48);
+        cube = new Cube();
+
+        tr = new TextureReader();
+        lines = true;
+        lights = true;
+
+        vao = new int[1];
+        vbo = new int[12];
+
+        light = new PositionalLight();
+        light_position = new Point3D(5, 5, 10);
+        globalAmbient = new float[]{0.7f, 0.7f, 0.7f, 1.0f};
 
         gl.glEnable(GL_CLIP_DISTANCE0);
 
         lineRenderer = createShaderPrograms(d, "src/a3/shaders/line_vertex.glsl", "src/a3/shaders/line_fragment.glsl");
         renderer = createShaderPrograms(d, "src/a3/shaders/default_vertex.glsl", "src/a3/shaders/default_fragment.glsl");
         lightRenderer = createShaderPrograms(d, "src/a3/shaders/light_vertex.glsl", "src/a3/shaders/light_fragment.glsl");
-        clipRenderer = createShaderPrograms(d, "src/a3/shaders/default_vertex.glsl", "src/a3/shaders/default_fragment.glsl");
-//        clipRenderer = createShaderPrograms(d, "src/a3/shaders/clipped_vertex.glsl", "src/a3/shaders/clipped_fragment.glsl");
+        clipRenderer = createShaderPrograms(d, "src/a3/shaders/clipped_vertex.glsl", "src/a3/shaders/clipped_fragment.glsl");
+        lightOffRenderer = createShaderPrograms(d, "src/a3/shaders/light_off_vertex.glsl", "src/a3/shaders/light_off_fragment.glsl");
+
+        gold_material = Material.GOLD;
 
         setupVertices(gl);
 
-        jade = tr.loadTexture(d, "src/a3/textures/jade.jpg");
-//        yarn = tr.loadTexture(d, "src/a3/textures/yarn.jpg");
-        fishy = tr.loadTexture(d, "src/a3/textures/fish.jpg");
-//        rusty = tr.loadTexture(d, "src/a3/textures/rusty.jpg");
-//        cracked = tr.loadTexture(d, "src/a3/textures/cracked.jpg");
-//        concrete = tr.loadTexture(d, "src/a3/textures/concrete.jpg");
+        jade_texture = tr.loadTexture(d, "src/a3/textures/jade.jpg");
+        yarn_texture = tr.loadTexture(d, "src/a3/textures/yarn.jpg");
+        gold_texture = tr.loadTexture(d, "src/a3/textures/gold.jpg");
+        fishy_texture = tr.loadTexture(d, "src/a3/textures/fish.jpg");
+        rusty_texture = tr.loadTexture(d, "src/a3/textures/rusty.jpg");
+        water_texture = tr.loadTexture(d, "src/a3/textures/water.jpg");
+        cracked_texture = tr.loadTexture(d, "src/a3/textures/cracked.jpg");
+        concrete_texture = tr.loadTexture(d, "src/a3/textures/concrete.jpg");
     }
 
     public void reshape(GLAutoDrawable d, int x, int y, int width, int height) {
@@ -480,4 +604,7 @@ public class GLWorld extends JFrame implements GLEventListener {
         lines = !lines;
     }
 
+    public void toggleLights() {
+        lights = !lights;
+    }
 }

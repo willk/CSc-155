@@ -1,11 +1,3 @@
-/*
- * TODO:
- *  1. Make all the things lit
- *      a. materials
- *      ----b. dot for the light----
- *      c. move the light with the mouse
- *  2. Instance the fish
- */
 package a3;
 
 import a3.commands.*;
@@ -341,7 +333,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
 
         gl.glFrontFace(GL_CCW);
         gl.glDrawArraysInstanced(GL_TRIANGLES, 0, fish.getNumIndices(), 3);
-//        gl.glDrawArrays(GL_TRIANGLES, 0, fish.getNumIndices());
 
         s.popMatrix();
         s.popMatrix();
@@ -604,7 +595,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        System.out.println(lightPosition.toString());
         float z = (float) lightPosition.getZ();
 
         if (e.getX() > this.getWidth() / 2 && e.getX() < this.getWidth())

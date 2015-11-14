@@ -31,19 +31,19 @@ uniform Material material;
 uniform mat4 mv_matrix;
 uniform mat4 proj_matrix;
 uniform mat4 n_matrix;
-uniform vec4 clip = vec4 (0.0, -1.0, 0.0, 0.0);
-uniform int flipNormals;
 
 void main(void) {
-    gl_ClipDistance[0] = dot(vec4(position, 1), clip);
+    float x = sin(1.1 * gl_InstanceID) * 1.2;
+    float y = cos(0.8 * gl_InstanceID) * 1.2;
+    float z = sin(0.7 * gl_InstanceID) * cos(1.5 * gl_InstanceID) * 1.2;
 
-    if (flipNormals == 1) varyingNormal = -varyingNormal;
+    vec3 newPosition = position + vec3(x, y, z);
 
-    varyingPosition = (mv_matrix * vec4(position, 1.0)).xyz;
+    varyingPosition = (mv_matrix * vec4(newPosition, 1.0)).xyz;
     varyingLightDirection = light.position - varyingPosition;
     varyingNormal = (n_matrix * vec4(normals, 1.0)).xyz;
     varyingHalfVector = normalize(normalize(varyingLightDirection) + normalize(-varyingPosition)).xyz;
 
-    gl_Position = proj_matrix * mv_matrix * vec4(position, 1.0);
+    gl_Position = proj_matrix * mv_matrix * vec4(newPosition, 1.0);
     tc = tCoord;
 }

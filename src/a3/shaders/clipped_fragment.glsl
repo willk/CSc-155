@@ -30,6 +30,7 @@ uniform Material material;
 uniform mat4 mv_matrix;
 uniform mat4 proj_matrix;
 uniform mat4 n_matrix;
+uniform int flipNormals;
 
 void main(void) {
     vec3 L = normalize(varyingLightDirection);
@@ -41,8 +42,10 @@ void main(void) {
     // Angle between light and surface normal
     float theta = dot(L, N);
 
-    fragColor = globalAmbient * material.ambient + light.ambient * material.ambient +
-                light.diffuse * material.diffuse * max(theta, 0) +
-                light.specular * material.specular * pow(max(dot(H, N), 0.0), material.shininess * 3.0) +
-                texture2D(s, tc) * 0.3;
+    vec4 lighting = globalAmbient * material.ambient +
+                        light.ambient * material.ambient +
+                        light.diffuse * material.diffuse * max(theta, 0.0) +
+                        light.specular * material.specular * pow(max(dot(H, N), 0.0), material.shininess * 3.0);
+
+    fragColor = texture2D(s, tc) * 0.6 + lighting * 0.4;
 }

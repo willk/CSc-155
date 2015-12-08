@@ -394,9 +394,9 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
         setupVertices(gl);
 
         jadeTexture = tr.loadTexture(d, "src/textures/jade.jpg");
-        goldTexture = tr.loadTexture(d, "src/textures/gold.jpg");
-        waterTexture = tr.loadTexture(d, "src/textures/water.jpg");
-        fishyTexture = tr.loadTexture(d, "src/textures/fish.jpg");
+//        goldTexture = tr.loadTexture(d, "src/textures/gold.jpg");
+//        waterTexture = tr.loadTexture(d, "src/textures/water.jpg");
+//        fishyTexture = tr.loadTexture(d, "src/textures/fish.jpg");
     }
 
     public void reshape(GLAutoDrawable d, int x, int y, int width, int height) {

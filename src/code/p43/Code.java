@@ -1,7 +1,5 @@
 package code.p43;
 
-import a2.objects.Cube;
-import a2.objects.Sphere;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL4;
 import com.jogamp.opengl.GLAutoDrawable;
@@ -12,6 +10,8 @@ import com.jogamp.opengl.util.FPSAnimator;
 import graphicslib3D.GLSLUtils;
 import graphicslib3D.Matrix3D;
 import graphicslib3D.MatrixStack;
+import objects.Cube;
+import objects.Sphere;
 
 import javax.swing.*;
 import java.nio.FloatBuffer;
@@ -175,7 +175,7 @@ public class Code extends JFrame implements GLEventListener {
         gl.glGenBuffers(vbo.length, vbo, 0);
         Cube c = new Cube();
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        FloatBuffer cubeBuf = FloatBuffer.wrap(c.getVertexPositions());
+        FloatBuffer cubeBuf = FloatBuffer.wrap(c.getVertices());
         gl.glBufferData(GL.GL_ARRAY_BUFFER, cubeBuf.limit() * 4, cubeBuf, GL.GL_STATIC_DRAW);
 
         float[] svalues = new float[d.getIndices().length * 3];
@@ -215,8 +215,8 @@ public class Code extends JFrame implements GLEventListener {
     private int createShaderPrograms(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
 
-        String vshaderSource[] = util.readShaderSource("src/p43/shaders/default_vertex.glsl");
-        String fshaderSource[] = util.readShaderSource("src/p43/shaders/default_fragment.glsl");
+        String vshaderSource[] = GLSLUtils.readShaderSource("src/p43/a3.shaders/default_vertex.glsl");
+        String fshaderSource[] = GLSLUtils.readShaderSource("src/p43/a3.shaders/default_fragment.glsl");
         int lengths[];
 
         int vShader = gl.glCreateShader(GL4.GL_VERTEX_SHADER);

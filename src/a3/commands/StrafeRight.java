@@ -1,7 +1,7 @@
-package a2.commands;
+package a3.commands;
 
 
-import a2.objects.Camera;
+import a3.objects.Camera;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

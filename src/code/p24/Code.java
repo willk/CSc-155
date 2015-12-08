@@ -31,6 +31,7 @@ public class Code extends JFrame implements GLEventListener {
 
     public void display(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
+        gl.glPointSize(1f);
         gl.glUseProgram(rendering_program);
         gl.glDrawArrays(GL_POINTS, 0, 1);
     }
@@ -45,8 +46,8 @@ public class Code extends JFrame implements GLEventListener {
     private int createShaderPrograms(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
 
-        String vshaderSource[] = GLSLUtils.readShaderSource("src/code/p24/vertex.glsl");
-        String fshaderSource[] = GLSLUtils.readShaderSource("src/code/p24/fragment.glsl");
+        String vshaderSource[] = GLSLUtils.readShaderSource("src/code/p24/default_vertex.glsl");
+        String fshaderSource[] = GLSLUtils.readShaderSource("src/code/p24/default_fragment.glsl");
         int lengths[];
 
         int vShader = gl.glCreateShader(GL4.GL_VERTEX_SHADER);

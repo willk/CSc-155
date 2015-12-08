@@ -45,8 +45,8 @@ public class MapView extends GLJPanel implements GLEventListener, MouseWheelList
         fragmentCompiled = new int[1];
         linked = new int[1];
 
-        String vshaderSource[] = GLSLUtils.readShaderSource("src/a1/shaders/vertex.glsl");
-        String fshaderSource[] = GLSLUtils.readShaderSource("src/a1/shaders/fragment.glsl");
+        String vshaderSource[] = GLSLUtils.readShaderSource("src/a1/shaders/default_vertex.glsl");
+        String fshaderSource[] = GLSLUtils.readShaderSource("src/a1/shaders/default_fragment.glsl");
         int lengths[];
 
         int vShader = gl.glCreateShader(GL4.GL_VERTEX_SHADER);

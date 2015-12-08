@@ -1,7 +1,6 @@
-package a2.commands;
+package a3.commands;
 
-
-import a2.objects.Camera;
+import a3.objects.Camera;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -9,15 +8,15 @@ import java.awt.event.ActionEvent;
 /**
  * Created by willk on 10/20/2015.
  */
-public class StrafeRight extends AbstractAction {
-    private static StrafeRight ourInstance = new StrafeRight();
+public class Down extends AbstractAction {
+    private static Down ourInstance = new Down();
     private Camera c;
 
-    private StrafeRight() {
-        super("Strafe Right");
+    private Down() {
+        super("Move Down");
     }
 
-    public static StrafeRight getInstance() {
+    public static Down getInstance() {
         return ourInstance;
     }
 
@@ -27,6 +26,6 @@ public class StrafeRight extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        c.movex(.25);
+        c.movey(-.25);
     }
 }

@@ -167,15 +167,15 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
             tn[i * 3 + 2] = (float) torus_vertices[sphere_indices[i]].getNormalZ();
         }
 
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
         vBuffer = FloatBuffer.wrap(tp);
         gl.glBufferData(GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL_STATIC_DRAW);
 
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
         tBuffer = FloatBuffer.wrap(tt);
         gl.glBufferData(GL_ARRAY_BUFFER, tBuffer.limit() * 4, tBuffer, GL_STATIC_DRAW);
 
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
         nBuffer = FloatBuffer.wrap(tn);
         gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
         // END Torus

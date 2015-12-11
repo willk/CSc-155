@@ -30,6 +30,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
     private Cube cube;
     private Torus torus;
     private Sphere sphere;
+    private ImportedModel pyramid;
     private ImportedModel fish;
     private TextureReader tr;
     private Material silverMaterial, jadeMaterial, goldMaterial;
@@ -111,8 +112,8 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
 
     // Puts the things into the VBOs
     private void setupVertices(GL4 gl) {
-        int[] sphere_indices = sphere.getIndices(), torus_indices = torus.getIndices();
-        Vertex3D[] sphere_vertices = sphere.getVertices(), torus_vertices = torus.getVertices();
+        int[] sphere_indices = sphere.getIndices(), torus_indices = torus.getIndices(), pyramid_indices = pyramid.getIndices();
+        Vertex3D[] sphere_vertices = sphere.getVertices(), torus_vertices = torus.getVertices(), pyramid_vertices = pyramid.getVertices();
 
         // The Sphere
         float[] sp = new float[sphere.getIndices().length * 3];
@@ -164,7 +165,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
 
             tn[i * 3] = (float) torus_vertices[torus_indices[i]].getNormalX();
             tn[i * 3 + 1] = (float) torus_vertices[torus_indices[i]].getNormalY();
-            tn[i * 3 + 2] = (float) torus_vertices[sphere_indices[i]].getNormalZ();
+            tn[i * 3 + 2] = (float) torus_vertices[torus_indices[i]].getNormalZ();
         }
 
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
@@ -179,6 +180,37 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
         nBuffer = FloatBuffer.wrap(tn);
         gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
         // END Torus
+
+        // The Pyramid
+        float[] pp = new float[pyramid.getIndices().length * 3];
+        float[] pt = new float[pyramid.getIndices().length * 2];
+        float[] pn = new float[pyramid.getIndices().length * 3];
+
+        for (int i = 0; i < pyramid.getIndices().length; i++) {
+            pp[i * 3] = (float) pyramid_vertices[pyramid_indices[i]].getX();
+            pp[i * 3 + 1] = (float) pyramid_vertices[pyramid_indices[i]].getY();
+            pp[i * 3 + 2] = (float) pyramid_vertices[pyramid_indices[i]].getZ();
+
+            pt[i * 2] = (float) pyramid_vertices[pyramid_indices[i]].getS();
+            pt[i * 2 + 1] = (float) pyramid_vertices[pyramid_indices[i]].getT();
+
+            pn[i * 3] = (float) pyramid_vertices[pyramid_indices[i]].getNormalX();
+            pn[i * 3 + 1] = (float) pyramid_vertices[pyramid_indices[i]].getNormalY();
+            pn[i * 3 + 2] = (float) pyramid_vertices[pyramid_indices[i]].getNormalZ();
+        }
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        vBuffer = FloatBuffer.wrap(pp);
+        gl.glBufferData(GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        tBuffer = FloatBuffer.wrap(pt);
+        gl.glBufferData(GL_ARRAY_BUFFER, tBuffer.limit() * 4, tBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
+        nBuffer = FloatBuffer.wrap(pn);
+        gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
+
     }
 
 
@@ -247,20 +279,20 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
         GL4 gl = (GL4) d.getGL();
 
         positionalLight = new PositionalLight();
-        if (lightFlag) {
-            positionalLight.setPosition(lightPosition);
-            positionalLight.setAmbient(new float[]{1, 0, 0, 1});
-            positionalLight.setDiffuse(new float[]{1, 1, 1, 1});
-            positionalLight.setSpecular(new float[]{1, 1, 1, 1});
-
-            positionalLight.setConstantAtt(0);
-        } else {
-            positionalLight.setPosition(lightPosition);
-            positionalLight.setAmbient(new float[]{0, 0, 0, 1});
-            positionalLight.setDiffuse(new float[]{1, 1, 1, 1});
-            positionalLight.setSpecular(new float[]{1, 1, 1, 1});
-            positionalLight.setConstantAtt(0);
-        }
+//        if (lightFlag) {
+//            positionalLight.setPosition(lightPosition);
+//            positionalLight.setAmbient(new float[]{1, 0, 0, 1});
+//            positionalLight.setDiffuse(new float[]{1, 1, 1, 1});
+//            positionalLight.setSpecular(new float[]{1, 1, 1, 1});
+//
+//            positionalLight.setConstantAtt(0);
+//        } else {
+//            positionalLight.setPosition(lightPosition);
+//            positionalLight.setAmbient(new float[]{0, 0, 0, 1});
+//            positionalLight.setDiffuse(new float[]{1, 1, 1, 1});
+//            positionalLight.setSpecular(new float[]{1, 1, 1, 1});
+//            positionalLight.setConstantAtt(0);
+//        }
 
         Matrix3D pMatrix;
         int mv_loc, proj_loc, n_loc;
@@ -283,7 +315,98 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
         s.pushMatrix(); // Push camera Matrix
         s.multMatrix(camera.getVTM()); // apply camera transforms
 
+        /* Pyramid */
+        /* vbo 6, 7, 8 */
+        /* Pyramid Renderer */
+        gl.glUseProgram(renderer);
+        mv_loc = gl.glGetUniformLocation(renderer, "mv_matrix");
+        proj_loc = gl.glGetUniformLocation(renderer, "proj_matrix");
+        n_loc = gl.glGetUniformLocation(renderer, "n_matrix");
 
+        /* Lighting */
+        positionalLight.setPosition(lightPosition);
+        createLighting(d, s.peek(), renderer, goldMaterial);
+        /* End Lighting*/
+        /* End Pyramid Renderer */
+
+        s.pushMatrix();
+        s.translate(0, 0, 0);
+        s.pushMatrix();
+        s.scale(5, 5, 5);
+
+        // Taking the top of the Stack and putting it in the Uniform
+        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_loc, 1, false, s.peek().inverse().transpose().getFloatValues(), 0);
+
+        // I am working with this buffer
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        // (location = 0, take in 3 at a time, floats, *, *, *);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        // Enable location = 0
+        gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, goldTexture);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
+        gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+        gl.glFrontFace(GL_CCW);
+        gl.glDrawArraysInstanced(GL_TRIANGLES, 0, pyramid.getNumIndices(), 3);
+
+        s.popMatrix();
+        s.popMatrix();
+        /* End Pyramid */
+
+        /* Torus */
+        /* vbo 3, 4, 5 */
+        /* Pyramid Renderer */
+        gl.glUseProgram(renderer);
+        mv_loc = gl.glGetUniformLocation(renderer, "mv_matrix");
+        proj_loc = gl.glGetUniformLocation(renderer, "proj_matrix");
+        n_loc = gl.glGetUniformLocation(renderer, "n_matrix");
+
+        /* Lighting */
+        positionalLight.setPosition(lightPosition);
+        createLighting(d, s.peek(), renderer, jadeMaterial);
+        /* End Lighting*/
+        /* End Torus Renderer */
+
+        s.pushMatrix();
+        s.translate(0, amt * 10, 0);
+
+        // Taking the top of the Stack and putting it in the Uniform
+        gl.glUniformMatrix4fv(mv_loc, 1, false, s.peek().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_loc, 1, false, pMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_loc, 1, false, s.peek().inverse().transpose().getFloatValues(), 0);
+
+        // I am working with this buffer
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+        // (location = 0, take in 3 at a time, floats, *, *, *);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        // Enable location = 0
+        gl.glEnableVertexAttribArray(0);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, jadeTexture);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
+        gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+
+        gl.glFrontFace(GL_CCW);
+        gl.glDrawArraysInstanced(GL_TRIANGLES, 0, torus.getIndices().length, 3);
+
+        s.popMatrix();
+        /* End Torus */
 
         /* Light */
         s.pushMatrix();
@@ -324,7 +447,8 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
         GL4 gl = (GL4) d.getGL();
 
         Point3D lp = positionalLight.getPosition();
-        Point3D lpv = lp.mult(matrixStack);
+//        Point3D lpv = lp.mult(matrixStack);
+        Point3D lpv = lp;
 
         float[] currentLightPosition = new float[]{(float) lpv.getX(), (float) lpv.getY(), (float) lpv.getZ()};
 
@@ -359,8 +483,9 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
         GL4 gl = (GL4) d.getGL();
 
         // Setup models
+        pyramid = new ImportedModel("pyramid.obj");
         sphere = new Sphere(48);
-        torus = new Torus();
+        torus = new Torus(0.6f, 0.4f, 48);
 
         tr = new TextureReader();
         lineFlag = true;
@@ -394,7 +519,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseMotionListe
         setupVertices(gl);
 
         jadeTexture = tr.loadTexture(d, "src/textures/jade.jpg");
-//        goldTexture = tr.loadTexture(d, "src/textures/gold.jpg");
+        goldTexture = tr.loadTexture(d, "src/textures/gold.jpg");
 //        waterTexture = tr.loadTexture(d, "src/textures/water.jpg");
 //        fishyTexture = tr.loadTexture(d, "src/textures/fish.jpg");
     }

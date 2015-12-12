@@ -31,6 +31,27 @@ public class Camera {
     }
 
     /*
+     * Get the x location of the camera.
+     */
+    public double getX() {
+        return l.getX();
+    }
+
+    /*
+     * Get the y location of the camera.
+     */
+    public double getY() {
+        return l.getY();
+    }
+
+    /*
+     * Get the z location of the camera.
+     */
+    public double getZ() {
+        return l.getZ();
+    }
+
+    /*
      * Move forward or backwards along the Z axis without thinking about being in the negative z.
      * Camera is moving along the N vector.
      * @param dz - negative for backwards, positive for forwards.

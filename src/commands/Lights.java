@@ -26,6 +26,6 @@ public class Lights extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        target.toggleLights();
+//        target.toggleLights();
     }
 }

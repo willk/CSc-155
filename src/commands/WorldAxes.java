@@ -26,6 +26,6 @@ public class WorldAxes extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        target.toggleLines();
+//        target.toggleLines();
     }
 }

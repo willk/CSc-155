@@ -18,28 +18,27 @@ import static com.jogamp.opengl.GL4.*;
 public class Code extends JFrame implements GLEventListener {
     graphicslib3D.Material thisMaterial;
     float aspect;
-    // location of torus and camera
+
+    // Locations
     graphicslib3D.Point3D torusLoc = new graphicslib3D.Point3D(1.6, 0.0, -0.3);
     graphicslib3D.Point3D pyrLoc = new graphicslib3D.Point3D(-1.0, 0.1, 0.3);
     graphicslib3D.Point3D cameraLoc = new graphicslib3D.Point3D(0.0, 0.2, 6.0);
     graphicslib3D.Point3D lightLoc = new graphicslib3D.Point3D(-3.8f, 2.2f, 1.1f);
-    Matrix3D m_matrix = new Matrix3D();
-    Matrix3D v_matrix = new Matrix3D();
-    Matrix3D mv_matrix = new Matrix3D();
-    Matrix3D proj_matrix = new Matrix3D();
-    // light stuff
+    Matrix3D mMatrix = new Matrix3D(), vMatrix = new Matrix3D(), mvMatrix = new Matrix3D(), projMatrix = new Matrix3D();
+
+    // Lighting
     float[] globalAmbient = new float[]{0.7f, 0.7f, 0.7f, 1.0f};
-    PositionalLight currentLight = new PositionalLight();
-    // shadow stuff
-    int scSizeX, scSizeY;
-    int[] shadow_tex = new int[1];
-    int[] shadow_buffer = new int[1];
-    Matrix3D lightV_matrix = new Matrix3D();
-    Matrix3D lightP_matrix = new Matrix3D();
-    Matrix3D shadowMVP1 = new Matrix3D();
-    Matrix3D shadowMVP2 = new Matrix3D();
-    Matrix3D b = new Matrix3D();
-    // model stuff
+    PositionalLight light = new PositionalLight();
+
+
+    // Shadows
+    int screenX, screenY;
+    int[] shadowTex = new int[1], shadowBuffer = new int[1];
+    Matrix3D lightVMatrix = new Matrix3D(), lightPMatrix = new Matrix3D(),
+            shadowMVP1 = new Matrix3D(), shadowMVP2 = new Matrix3D(),
+            b = new Matrix3D();
+
+    // Models
     int numPyramidVertices, numPyramidIndices;
     ImportedModel pyramid = new ImportedModel("pyr.obj");
     Torus myTorus = new Torus(0.6f, 0.4f, 48);
@@ -49,8 +48,8 @@ public class Code extends JFrame implements GLEventListener {
     private int rendering_program1, rendering_program2;
     private int vaoID[] = new int[1];
     private int[] bufferIDs = new int[6];
-    ;
-    private int mv_location, proj_location, vertexLoc, n_location;
+    private int mv_location, proj_location, n_location;
+
     private GLSLUtils util = new GLSLUtils();
 
     public Code() {
@@ -72,9 +71,9 @@ public class Code extends JFrame implements GLEventListener {
     public void display(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
 
-        currentLight.setPosition(lightLoc);
+        light.setPosition(lightLoc);
         aspect = myCanvas.getWidth() / myCanvas.getHeight();
-        proj_matrix = perspective(50.0f, aspect, 0.1f, 1000.0f);
+        projMatrix = perspective(50.0f, aspect, 0.1f, 1000.0f);
 
         FloatBuffer bg = FloatBuffer.allocate(4);
         bg.put(0, 0.0f);
@@ -87,8 +86,8 @@ public class Code extends JFrame implements GLEventListener {
         depthClearVal[0] = 1.0f;
         gl.glClearBufferfv(GL_DEPTH, 0, depthClearVal, 0);
 
-        gl.glBindFramebuffer(GL_FRAMEBUFFER, shadow_buffer[0]);
-        gl.glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_tex[0], 0);
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, shadowBuffer[0]);
+        gl.glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowTex[0], 0);
 
         gl.glDrawBuffer(GL.GL_NONE);
         gl.glEnable(GL_DEPTH_TEST);
@@ -102,7 +101,7 @@ public class Code extends JFrame implements GLEventListener {
 
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gl.glActiveTexture(gl.GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, shadow_tex[0]);
+        gl.glBindTexture(GL_TEXTURE_2D, shadowTex[0]);
 
         gl.glDrawBuffer(GL.GL_FRONT);
 
@@ -117,22 +116,22 @@ public class Code extends JFrame implements GLEventListener {
 
         Point3D origin = new Point3D(0.0, 0.0, 0.0);
         Vector3D up = new Vector3D(0.0, 1.0, 0.0);
-        lightV_matrix.setToIdentity();
-        lightP_matrix.setToIdentity();
+        lightVMatrix.setToIdentity();
+        lightPMatrix.setToIdentity();
 
-        lightV_matrix = lookAt(currentLight.getPosition(), origin, up);    // vector from light to origin
-        lightP_matrix = perspective(50.0f, aspect, 0.1f, 1000.0f);
+        lightVMatrix = lookAt(light.getPosition(), origin, up);    // vector from light to origin
+        lightPMatrix = perspective(50.0f, aspect, 0.1f, 1000.0f);
 
         // draw the torus
 
-        m_matrix.setToIdentity();
-        m_matrix.translate(torusLoc.getX(), torusLoc.getY(), torusLoc.getZ());
-        m_matrix.rotateX(25.0);
+        mMatrix.setToIdentity();
+        mMatrix.translate(torusLoc.getX(), torusLoc.getY(), torusLoc.getZ());
+        mMatrix.rotateX(25.0);
 
         shadowMVP1.setToIdentity();
-        shadowMVP1.concatenate(lightP_matrix);
-        shadowMVP1.concatenate(lightV_matrix);
-        shadowMVP1.concatenate(m_matrix);
+        shadowMVP1.concatenate(lightPMatrix);
+        shadowMVP1.concatenate(lightVMatrix);
+        shadowMVP1.concatenate(mMatrix);
         int shadow_location = gl.glGetUniformLocation(rendering_program1, "shadowMVP");
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP1.getFloatValues(), 0);
 
@@ -156,15 +155,15 @@ public class Code extends JFrame implements GLEventListener {
         proj_location = gl.glGetUniformLocation(rendering_program1, "proj_matrix");
 
         //  build the MODEL matrix
-        m_matrix.setToIdentity();
-        m_matrix.translate(pyrLoc.getX(), pyrLoc.getY(), pyrLoc.getZ());
-        m_matrix.rotateX(30.0);
-        m_matrix.rotateY(40.0);
+        mMatrix.setToIdentity();
+        mMatrix.translate(pyrLoc.getX(), pyrLoc.getY(), pyrLoc.getZ());
+        mMatrix.rotateX(30.0);
+        mMatrix.rotateY(40.0);
 
         shadowMVP1.setToIdentity();
-        shadowMVP1.concatenate(lightP_matrix);
-        shadowMVP1.concatenate(lightV_matrix);
-        shadowMVP1.concatenate(m_matrix);
+        shadowMVP1.concatenate(lightPMatrix);
+        shadowMVP1.concatenate(lightVMatrix);
+        shadowMVP1.concatenate(mMatrix);
 
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP1.getFloatValues(), 0);
 
@@ -190,7 +189,7 @@ public class Code extends JFrame implements GLEventListener {
         // draw the torus
 
         thisMaterial = graphicslib3D.Material.BRONZE;
-        installLights(rendering_program2, v_matrix, drawable);
+        installLights(rendering_program2, vMatrix, drawable);
 
         mv_location = gl.glGetUniformLocation(rendering_program2, "mv_matrix");
         proj_location = gl.glGetUniformLocation(rendering_program2, "proj_matrix");
@@ -198,30 +197,30 @@ public class Code extends JFrame implements GLEventListener {
         int shadow_location = gl.glGetUniformLocation(rendering_program2, "shadowMVP");
 
         //  build the MODEL matrix
-        m_matrix.setToIdentity();
-        m_matrix.translate(torusLoc.getX(), torusLoc.getY(), torusLoc.getZ());
+        mMatrix.setToIdentity();
+        mMatrix.translate(torusLoc.getX(), torusLoc.getY(), torusLoc.getZ());
         double amt = (double) (System.currentTimeMillis() % 36000) / 100.0;
-        m_matrix.rotateX(25.0);
+        mMatrix.rotateX(25.0);
 
         //  build the VIEW matrix
-        v_matrix.setToIdentity();
-        v_matrix.translate(-cameraLoc.getX(), -cameraLoc.getY(), -cameraLoc.getZ());
+        vMatrix.setToIdentity();
+        vMatrix.translate(-cameraLoc.getX(), -cameraLoc.getY(), -cameraLoc.getZ());
 
         //  build the MODEL-VIEW matrix
-        mv_matrix.setToIdentity();
-        mv_matrix.concatenate(v_matrix);
-        mv_matrix.concatenate(m_matrix);
+        mvMatrix.setToIdentity();
+        mvMatrix.concatenate(vMatrix);
+        mvMatrix.concatenate(mMatrix);
 
         shadowMVP2.setToIdentity();
         shadowMVP2.concatenate(b);
-        shadowMVP2.concatenate(lightP_matrix);
-        shadowMVP2.concatenate(lightV_matrix);
-        shadowMVP2.concatenate(m_matrix);
+        shadowMVP2.concatenate(lightPMatrix);
+        shadowMVP2.concatenate(lightVMatrix);
+        shadowMVP2.concatenate(mMatrix);
 
         //  put the MV and PROJ matrices into the corresponding uniforms
-        gl.glUniformMatrix4fv(mv_location, 1, false, mv_matrix.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_location, 1, false, proj_matrix.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false, (mv_matrix.inverse()).transpose().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_location, 1, false, mvMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_location, 1, false, projMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_location, 1, false, (mvMatrix.inverse()).transpose().getFloatValues(), 0);
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP2.getFloatValues(), 0);
 
         // set up torus vertices buffer
@@ -245,7 +244,7 @@ public class Code extends JFrame implements GLEventListener {
         // draw the pyramid
 
         thisMaterial = graphicslib3D.Material.GOLD;
-        installLights(rendering_program2, v_matrix, drawable);
+        installLights(rendering_program2, vMatrix, drawable);
 
         gl.glUseProgram(rendering_program2);
         mv_location = gl.glGetUniformLocation(rendering_program2, "mv_matrix");
@@ -253,27 +252,27 @@ public class Code extends JFrame implements GLEventListener {
         n_location = gl.glGetUniformLocation(rendering_program2, "normalMat");
 
         //  build the MODEL matrix
-        m_matrix.setToIdentity();
-        m_matrix.translate(pyrLoc.getX(), pyrLoc.getY(), pyrLoc.getZ());
-        m_matrix.rotateX(30.0);
-        m_matrix.rotateY(40.0);
+        mMatrix.setToIdentity();
+        mMatrix.translate(pyrLoc.getX(), pyrLoc.getY(), pyrLoc.getZ());
+        mMatrix.rotateX(30.0);
+        mMatrix.rotateY(40.0);
 
         //  build the MODEL-VIEW matrix
-        mv_matrix.setToIdentity();
-        mv_matrix.concatenate(v_matrix);
-        mv_matrix.concatenate(m_matrix);
+        mvMatrix.setToIdentity();
+        mvMatrix.concatenate(vMatrix);
+        mvMatrix.concatenate(mMatrix);
 
         shadowMVP2.setToIdentity();
         shadowMVP2.concatenate(b);
-        shadowMVP2.concatenate(lightP_matrix);
-        shadowMVP2.concatenate(lightV_matrix);
-        shadowMVP2.concatenate(m_matrix);
+        shadowMVP2.concatenate(lightPMatrix);
+        shadowMVP2.concatenate(lightVMatrix);
+        shadowMVP2.concatenate(mMatrix);
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP2.getFloatValues(), 0);
 
         //  put the MV and PROJ matrices into the corresponding uniforms
-        gl.glUniformMatrix4fv(mv_location, 1, false, mv_matrix.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(proj_location, 1, false, proj_matrix.getFloatValues(), 0);
-        gl.glUniformMatrix4fv(n_location, 1, false, (mv_matrix.inverse()).transpose().getFloatValues(), 0);
+        gl.glUniformMatrix4fv(mv_location, 1, false, mvMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_location, 1, false, projMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(n_location, 1, false, (mvMatrix.inverse()).transpose().getFloatValues(), 0);
 
         // set up vertices buffer
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferIDs[1]);
@@ -324,16 +323,16 @@ public class Code extends JFrame implements GLEventListener {
     public void setupShadowBuffers(GLAutoDrawable drawable) {
         GL4 gl = (GL4) drawable.getGL();
 
-        scSizeX = myCanvas.getWidth();
-        scSizeY = myCanvas.getHeight();
+        screenX = myCanvas.getWidth();
+        screenY = myCanvas.getHeight();
 
-        gl.glGenFramebuffers(1, shadow_buffer, 0);
-        gl.glBindFramebuffer(GL_FRAMEBUFFER, shadow_buffer[0]);
+        gl.glGenFramebuffers(1, shadowBuffer, 0);
+        gl.glBindFramebuffer(GL_FRAMEBUFFER, shadowBuffer[0]);
 
-        gl.glGenTextures(1, shadow_tex, 0);
-        gl.glBindTexture(GL_TEXTURE_2D, shadow_tex[0]);
+        gl.glGenTextures(1, shadowTex, 0);
+        gl.glBindTexture(GL_TEXTURE_2D, shadowTex[0]);
         gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
-                scSizeX, scSizeY, 0, GL_DEPTH_COMPONENT, GL_FLOAT, null);
+                screenX, screenY, 0, GL_DEPTH_COMPONENT, GL_FLOAT, null);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
@@ -446,7 +445,7 @@ public class Code extends JFrame implements GLEventListener {
         Material currentMaterial = new Material();
         currentMaterial = thisMaterial;
 
-        Point3D lightP = currentLight.getPosition();
+        Point3D lightP = light.getPosition();
         Point3D lightPv = lightP.mult(v_matrix);
 
         float[] currLightPos = new float[]{(float) lightPv.getX(),
@@ -471,9 +470,9 @@ public class Code extends JFrame implements GLEventListener {
         int MshiLoc = gl.glGetUniformLocation(rendering_program, "material.shininess");
 
         // set the uniform light and material values in the shader
-        gl.glProgramUniform4fv(rendering_program, ambLoc, 1, currentLight.getAmbient(), 0);
-        gl.glProgramUniform4fv(rendering_program, diffLoc, 1, currentLight.getDiffuse(), 0);
-        gl.glProgramUniform4fv(rendering_program, specLoc, 1, currentLight.getSpecular(), 0);
+        gl.glProgramUniform4fv(rendering_program, ambLoc, 1, light.getAmbient(), 0);
+        gl.glProgramUniform4fv(rendering_program, diffLoc, 1, light.getDiffuse(), 0);
+        gl.glProgramUniform4fv(rendering_program, specLoc, 1, light.getSpecular(), 0);
         gl.glProgramUniform3fv(rendering_program, posLoc, 1, currLightPos, 0);
 
         gl.glProgramUniform4fv(rendering_program, MambLoc, 1, currentMaterial.getAmbient(), 0);

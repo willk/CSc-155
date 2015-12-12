@@ -158,8 +158,8 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         int shadow_location = gl.glGetUniformLocation(passOneRenderer, "shadowMVP");
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP1.getFloatValues(), 0);
 
-        // set up torus vertices buffer
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        // Torus Vertex VBO
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
@@ -184,12 +184,11 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         shadow_location = gl.glGetUniformLocation(passOneRenderer, "shadowMVP");
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP1.getFloatValues(), 0);
 
-        // VBO
-        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
+        // Sphere Vertex VBO
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-//        gl.glClear(GL_DEPTH_BUFFER_BIT);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
@@ -217,7 +216,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP1.getFloatValues(), 0);
 
         // set up vertices buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
@@ -271,13 +270,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glUniformMatrix4fv(n_location, 1, false, (mvMatrix.inverse()).transpose().getFloatValues(), 0);
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP2.getFloatValues(), 0);
 
-        // set up torus vertices buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        // Torus Vertex VBO
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-        // set up torus normals buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
+        // Torus Normal VBO
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[5]);
         gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
 
@@ -327,13 +326,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glUniformMatrix4fv(n_location, 1, false, (mvMatrix.inverse()).transpose().getFloatValues(), 0);
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP2.getFloatValues(), 0);
 
-        // set up sphere vertices buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
+        // Sphere Vertex VBO
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[6]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-        // set up sphere normals buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[5]);
+        // Sphere Normal VBO
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[8]);
         gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
 
@@ -381,13 +380,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glUniformMatrix4fv(proj_location, 1, false, projMatrix.getFloatValues(), 0);
         gl.glUniformMatrix4fv(n_location, 1, false, (mvMatrix.inverse()).transpose().getFloatValues(), 0);
 
-        // set up vertices buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
+        // Pyramid Vertex VBO
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-        // set up normals buffer
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[4]);
+        // Pyramid Normal VBO
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
         gl.glVertexAttribPointer(1, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
 
@@ -509,6 +508,26 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             pc[i * 3 + 2] = 0.0f;
         }
 
+
+        gl.glGenVertexArrays(vao.length, vao, 0);
+        gl.glBindVertexArray(vao[0]);
+        gl.glGenBuffers(vbo.length, vbo, 0);
+
+        //  Pyramid Vertices
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
+        FloatBuffer pyrVertBuf = FloatBuffer.wrap(pp);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, pyrVertBuf.limit() * 4, pyrVertBuf, GL.GL_STATIC_DRAW);
+
+        // Pyramid Texels
+
+        // Pyramid Normals
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
+        FloatBuffer pyrNorBuf = FloatBuffer.wrap(pn);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, pyrNorBuf.limit() * 4, pyrNorBuf, GL.GL_STATIC_DRAW);
+
+
+        // END Pyramid
+
         float[] tp = new float[torusIndices.length * 3];
         float[] tt = new float[torusIndices.length * 2];
         float[] tn = new float[torusIndices.length * 3];
@@ -533,6 +552,20 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             tc[i * 3 + 2] = 0.0f;
         }
 
+        //  Torus Vertices
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
+        FloatBuffer vertBuf = FloatBuffer.wrap(tp);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+
+        // Torus Texel vbo 4
+
+        // Torus Normals
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[5]);
+        FloatBuffer torusNorBuf = FloatBuffer.wrap(tn);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, torusNorBuf.limit() * 4, torusNorBuf, GL.GL_STATIC_DRAW);
+
+        // END Torus
+
         // The Sphere
         float[] sp = new float[sphere.getIndices().length * 3];
         float[] st = new float[sphere.getIndices().length * 2];
@@ -552,38 +585,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         }
         // END Sphere
 
-        gl.glGenVertexArrays(vao.length, vao, 0);
-        gl.glBindVertexArray(vao[0]);
-        gl.glGenBuffers(vbo.length, vbo, 0);
-
-
-        //  Torus Vertices
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        FloatBuffer vertBuf = FloatBuffer.wrap(tp);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
-
-        //  Pyramid Vertices
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[1]);
-        FloatBuffer pyrVertBuf = FloatBuffer.wrap(pp);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, pyrVertBuf.limit() * 4, pyrVertBuf, GL.GL_STATIC_DRAW);
-
         // Sphere Vertices
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[6]);
         FloatBuffer sphereVertBuf = FloatBuffer.wrap(sp);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, sphereVertBuf.limit() * 4, sphereVertBuf, GL.GL_STATIC_DRAW);
 
-        // Torus Normals
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
-        FloatBuffer torusNorBuf = FloatBuffer.wrap(tn);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, torusNorBuf.limit() * 4, torusNorBuf, GL.GL_STATIC_DRAW);
-
-        // Pyramid Normals
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[4]);
-        FloatBuffer pyrNorBuf = FloatBuffer.wrap(pn);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, pyrNorBuf.limit() * 4, pyrNorBuf, GL.GL_STATIC_DRAW);
-
         // Sphere Normals
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[5]);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[8]);
         FloatBuffer sphereNorBuf = FloatBuffer.wrap(pn);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, sphereNorBuf.limit() * 4, sphereNorBuf, GL.GL_STATIC_DRAW);
     }

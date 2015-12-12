@@ -24,7 +24,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
     private final GLCanvas canvas;
     private final JPanel panel;
 
-    private final Camera camera = new Camera(0, 5f, 15f);
+    private final Camera camera = new Camera(0, 0, 5);
 
     Matrix3D lightVMatrix = new Matrix3D(), lightPMatrix = new Matrix3D(),
             shadowMVP1 = new Matrix3D(), shadowMVP2 = new Matrix3D(),
@@ -42,13 +42,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
     // Material
     private Material material;
     private Point3D torusLocation = new Point3D(0, 0, 0),
-            pyramidLocation = new Point3D(0, 10, 0),
+            pyramidLocation = new Point3D(0, 1.75, 0),
             sphereLocation = new Point3D(0, 0, 0),
-            lightLocation = new Point3D(-3.8f, 2.2f, 1.1f);
+            lightLocation = new Point3D(3, -0.8, 7, 1);
+
     // Lighting
     private float[] globalAmbient = new float[]{0.7f, 0.7f, 0.7f, 1.0f};
     private PositionalLight light = new PositionalLight();
-
 
     private int aspect,
             screenX,
@@ -58,7 +58,8 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             n_location,
             passOneRenderer,
             passTwoRenderer,
-            lightRenderer;
+            lightRenderer,
+            concreteTexture;
 
     private int[] vao,
             vbo,
@@ -96,51 +97,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
-    private void initWorld() {
-        Forward.getInstance().setCamera(camera);
-        Back.getInstance().setCamera(camera);
-        Down.getInstance().setCamera(camera);
-        Up.getInstance().setCamera(camera);
-        StrafeRight.getInstance().setCamera(camera);
-        StrafeLeft.getInstance().setCamera(camera);
-        PanRight.getInstance().setCamera(camera);
-        PanLeft.getInstance().setCamera(camera);
-        PitchDown.getInstance().setCamera(camera);
-        PitchUp.getInstance().setCamera(camera);
-        Lights.getInstance().setTarget(this);
-        WorldAxes.getInstance().setTarget(this);
-
-        InputMap inputMap = panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), KeyEvent.VK_SPACE);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), KeyEvent.VK_UP);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), KeyEvent.VK_DOWN);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), KeyEvent.VK_LEFT);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), KeyEvent.VK_RIGHT);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_W, 0), KeyEvent.VK_W);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0), KeyEvent.VK_S);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A, 0), KeyEvent.VK_A);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_D, 0), KeyEvent.VK_D);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, 0), KeyEvent.VK_Q);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_E, 0), KeyEvent.VK_E);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), KeyEvent.VK_ESCAPE);
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), KeyEvent.VK_L);
-
-        ActionMap actionMap = panel.getActionMap();
-        actionMap.put(KeyEvent.VK_SPACE, WorldAxes.getInstance());
-        actionMap.put(KeyEvent.VK_UP, PitchUp.getInstance());
-        actionMap.put(KeyEvent.VK_DOWN, PitchDown.getInstance());
-        actionMap.put(KeyEvent.VK_LEFT, PanRight.getInstance());
-        actionMap.put(KeyEvent.VK_RIGHT, PanLeft.getInstance());
-        actionMap.put(KeyEvent.VK_Q, Up.getInstance());
-        actionMap.put(KeyEvent.VK_E, Down.getInstance());
-        actionMap.put(KeyEvent.VK_W, Forward.getInstance());
-        actionMap.put(KeyEvent.VK_S, Back.getInstance());
-        actionMap.put(KeyEvent.VK_A, StrafeLeft.getInstance());
-        actionMap.put(KeyEvent.VK_D, StrafeRight.getInstance());
-        actionMap.put(KeyEvent.VK_ESCAPE, Quit.getInstance());
-        actionMap.put(KeyEvent.VK_L, Lights.getInstance());
-    }
-
     public void display(GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
 
@@ -148,12 +104,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         aspect = canvas.getWidth() / canvas.getHeight();
         projMatrix = perspective(50.0f, aspect, 0.1f, 1000.0f);
 
-        FloatBuffer bg = FloatBuffer.allocate(4);
-        bg.put(0, 0.0f);
-        bg.put(1, 0.0f);
-        bg.put(2, 0.2f);
-        bg.put(3, 1.0f);
-        gl.glClearBufferfv(GL_COLOR, 0, bg);
+        gl.glClearBufferfv(GL_COLOR, 0, FloatBuffer.allocate(4));
 
         float depthClearVal[] = new float[1];
         depthClearVal[0] = 1.0f;
@@ -181,9 +132,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glDrawBuffer(GL.GL_FRONT);
 
         secondPass(d);
-
-        // Draw the light
-        mMatrix.setToIdentity();
     }
 
     public void firstPass(GLAutoDrawable d) {
@@ -230,7 +178,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
          * Draw Sphere
          */
         mMatrix.setToIdentity();
-        mMatrix.scale(2, 2, 2);
         mMatrix.translate(sphereLocation.getX(), sphereLocation.getY(), sphereLocation.getZ());
 
         shadowMVP1.setToIdentity();
@@ -261,6 +208,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         //  build the MODEL matrix
         mMatrix.setToIdentity();
         mMatrix.translate(pyramidLocation.getX(), pyramidLocation.getY(), pyramidLocation.getZ());
+        mMatrix.scale(.5, .5, .5);
         mMatrix.rotateX(30.0);
         mMatrix.rotateY(40.0);
 
@@ -286,7 +234,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
 
     public void secondPass(GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
-
 
         /*
          * Draw Torus
@@ -361,7 +308,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         //  build the MODEL matrix
         mMatrix.setToIdentity();
         mMatrix.translate(sphereLocation.getX(), sphereLocation.getY(), sphereLocation.getZ());
-        mMatrix.rotateX(25.0);
 
         //  build the VIEW matrix
         vMatrix.setToIdentity();
@@ -417,6 +363,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         //  build the MODEL matrix
         mMatrix.setToIdentity();
         mMatrix.translate(pyramidLocation.getX(), pyramidLocation.getY(), pyramidLocation.getZ());
+        mMatrix.scale(.5, .5, .5);
         mMatrix.rotateX(30.0);
         mMatrix.rotateY(40.0);
 
@@ -453,6 +400,26 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glDepthFunc(GL_LEQUAL);
 
         gl.glDrawArrays(GL_TRIANGLES, 0, pyramid.getNumVertices());
+
+        // Draw the light
+        gl.glPointSize(25);
+        gl.glUseProgram(lightRenderer);
+        mv_location = gl.glGetUniformLocation(lightRenderer, "mv_matrix");
+        proj_location = gl.glGetUniformLocation(lightRenderer, "proj_matrix");
+
+        mMatrix.setToIdentity();
+        mMatrix.translate(lightLocation.getX(), lightLocation.getY(), lightLocation.getZ());
+
+        //  build the MODEL-VIEW matrix
+        mvMatrix.setToIdentity();
+        mvMatrix.concatenate(vMatrix);
+        mvMatrix.concatenate(mMatrix);
+
+        gl.glUniformMatrix4fv(mv_location, 1, false, mvMatrix.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(proj_location, 1, false, projMatrix.getFloatValues(), 0);
+
+        gl.glDrawArrays(GL_POINTS, 0, 1);
+        gl.glPointSize(1);
     }
 
     public void init(GLAutoDrawable d) {
@@ -498,8 +465,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
 
         gl.glGenTextures(1, shadowTex, 0);
         gl.glBindTexture(GL_TEXTURE_2D, shadowTex[0]);
-        gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
-                screenX, screenY, 0, GL_DEPTH_COMPONENT, GL_FLOAT, null);
+        gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, screenX, screenY, 0, GL_DEPTH_COMPONENT, GL_FLOAT, null);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
@@ -517,7 +483,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
     private void setupVertices(GL4 gl) {
         int numberPyramidIndices;
         int[] pyramidIndices = pyramid.getIndices(), torusIndices = torus.getIndices(), sphereIndices = sphere.getIndices();
-
         Vertex3D[] pyramidVertices = pyramid.getVertices(), torusVertices = torus.getVertices(), sphereVertices = sphere.getVertices();
 
         numberPyramidIndices = pyramid.getNumIndices();
@@ -571,29 +536,24 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             tc[i * 3 + 2] = 0.0f;
         }
 
-        float[] sp = new float[sphereIndices.length * 3],
-                st = new float[sphereIndices.length * 2],
-                sn = new float[sphereIndices.length * 3],
-                sc = new float[sphereIndices.length * 3];
+        // The Sphere
+        float[] sp = new float[sphere.getIndices().length * 3];
+        float[] st = new float[sphere.getIndices().length * 2];
+        float[] sn = new float[sphere.getIndices().length * 3];
 
-        for (int i = 0; i < sphereIndices.length; i++) {
-            sp[i * 3] = (float) (sphereVertices[sphereIndices[i]]).getX();
-            sp[i * 3 + 1] = (float) (sphereVertices[sphereIndices[i]]).getY();
-            sp[i * 3 + 2] = (float) (sphereVertices[sphereIndices[i]]).getZ();
+        for (int i = 0; i < sphere.getIndices().length; i++) {
+            sp[i * 3] = (float) sphereVertices[sphereIndices[i]].getX();
+            sp[i * 3 + 1] = (float) sphereVertices[sphereIndices[i]].getY();
+            sp[i * 3 + 2] = (float) sphereVertices[sphereIndices[i]].getZ();
 
-            st[i * 2] = (float) (sphereVertices[sphereIndices[i]]).getS();
-            st[i * 2 + 1] = (float) (sphereVertices[sphereIndices[i]]).getT();
+            st[i * 2] = (float) sphereVertices[sphereIndices[i]].getS();
+            st[i * 2 + 1] = (float) sphereVertices[sphereIndices[i]].getT();
 
-            sn[i * 3] = (float) (sphereVertices[sphereIndices[i]]).getNormalX();
-            sn[i * 3 + 1] = (float) (sphereVertices[sphereIndices[i]]).getNormalY();
-            sn[i * 3 + 2] = (float) (sphereVertices[sphereIndices[i]]).getNormalZ();
+            sn[i * 3] = (float) sphereVertices[sphereIndices[i]].getNormalX();
+            sn[i * 3 + 1] = (float) sphereVertices[sphereIndices[i]].getNormalY();
+            sn[i * 3 + 2] = (float) sphereVertices[sphereIndices[i]].getNormalZ();
         }
-
-        for (int i = sphereIndices.length / 2; i < sphereIndices.length; i++) {
-            sc[i * 3] = 0.0f;
-            sc[i * 3 + 1] = 1.0f;
-            sc[i * 3 + 2] = 0.0f;
-        }
+        // END Sphere
 
         gl.glGenVertexArrays(vao.length, vao, 0);
         gl.glBindVertexArray(vao[0]);
@@ -646,36 +606,51 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         lightVertex = util.readShaderSource("src/shaders/lightVertex.glsl");
         lightFragment = util.readShaderSource("src/shaders/lightFragment.glsl");
 
-        int vertexShader1 = gl.glCreateShader(GL4.GL_VERTEX_SHADER);
-        int vertexShader2 = gl.glCreateShader(GL4.GL_VERTEX_SHADER);
-        int fragmentShader2 = gl.glCreateShader(GL4.GL_FRAGMENT_SHADER);
+        int shadowVertexShader = gl.glCreateShader(GL_VERTEX_SHADER),
+                defaultVertexShader = gl.glCreateShader(GL_VERTEX_SHADER),
+                defaultFragmentShader = gl.glCreateShader(GL_FRAGMENT_SHADER),
+                lightVertexShader = gl.glCreateShader(GL_VERTEX_SHADER),
+                lightFragmentShader = gl.glCreateShader(GL_FRAGMENT_SHADER);
 
         int[] l = new int[shadowVertex.length];
         for (int i = 0; i < l.length; i++) l[i] = shadowVertex[i].length();
-        gl.glShaderSource(vertexShader1, shadowVertex.length, shadowVertex, l, 0);
+        gl.glShaderSource(shadowVertexShader, shadowVertex.length, shadowVertex, l, 0);
 
         l = new int[defaultVertex.length];
         for (int i = 0; i < l.length; i++) l[i] = defaultVertex[i].length();
-        gl.glShaderSource(vertexShader2, defaultVertex.length, defaultVertex, l, 0);
+        gl.glShaderSource(defaultVertexShader, defaultVertex.length, defaultVertex, l, 0);
 
         l = new int[defaultFragment.length];
         for (int i = 0; i < l.length; i++) l[i] = defaultFragment[i].length();
-        gl.glShaderSource(fragmentShader2, defaultFragment.length, defaultFragment, l, 0);
+        gl.glShaderSource(defaultFragmentShader, defaultFragment.length, defaultFragment, l, 0);
 
-        gl.glCompileShader(vertexShader1);
-        gl.glCompileShader(vertexShader2);
-        gl.glCompileShader(fragmentShader2);
+        l = new int[lightVertex.length];
+        for (int i = 0; i < l.length; i++) l[i] = lightVertex[i].length();
+        gl.glShaderSource(lightVertexShader, lightVertex.length, lightVertex, l, 0);
+
+        l = new int[lightFragment.length];
+        for (int i = 0; i < l.length; i++) l[i] = lightFragment[i].length();
+        gl.glShaderSource(lightFragmentShader, lightFragment.length, lightFragment, l, 0);
+
+        gl.glCompileShader(shadowVertexShader);
+        gl.glCompileShader(defaultVertexShader);
+        gl.glCompileShader(defaultFragmentShader);
+        gl.glCompileShader(lightVertexShader);
+        gl.glCompileShader(lightFragmentShader);
 
         passOneRenderer = gl.glCreateProgram();
         passTwoRenderer = gl.glCreateProgram();
         lightRenderer = gl.glCreateProgram();
 
-        gl.glAttachShader(passOneRenderer, vertexShader1);
-        gl.glAttachShader(passTwoRenderer, vertexShader2);
-        gl.glAttachShader(passTwoRenderer, fragmentShader2);
+        gl.glAttachShader(passOneRenderer, shadowVertexShader);
+        gl.glAttachShader(passTwoRenderer, defaultVertexShader);
+        gl.glAttachShader(passTwoRenderer, defaultFragmentShader);
+        gl.glAttachShader(lightRenderer, lightVertexShader);
+        gl.glAttachShader(lightRenderer, lightFragmentShader);
 
         gl.glLinkProgram(passOneRenderer);
         gl.glLinkProgram(passTwoRenderer);
+        gl.glLinkProgram(lightRenderer);
     }
 
     /*
@@ -833,5 +808,50 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             else lightLocation.setZ(lightLocation.getZ() - 0.5);
         }
         canvas.display();
+    }
+
+    private void initWorld() {
+        Forward.getInstance().setCamera(camera);
+        Back.getInstance().setCamera(camera);
+        Down.getInstance().setCamera(camera);
+        Up.getInstance().setCamera(camera);
+        StrafeRight.getInstance().setCamera(camera);
+        StrafeLeft.getInstance().setCamera(camera);
+        PanRight.getInstance().setCamera(camera);
+        PanLeft.getInstance().setCamera(camera);
+        PitchDown.getInstance().setCamera(camera);
+        PitchUp.getInstance().setCamera(camera);
+        Lights.getInstance().setTarget(this);
+        WorldAxes.getInstance().setTarget(this);
+
+        InputMap inputMap = panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), KeyEvent.VK_SPACE);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), KeyEvent.VK_UP);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), KeyEvent.VK_DOWN);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), KeyEvent.VK_LEFT);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), KeyEvent.VK_RIGHT);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_W, 0), KeyEvent.VK_W);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0), KeyEvent.VK_S);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A, 0), KeyEvent.VK_A);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_D, 0), KeyEvent.VK_D);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, 0), KeyEvent.VK_Q);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_E, 0), KeyEvent.VK_E);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), KeyEvent.VK_ESCAPE);
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_L, 0), KeyEvent.VK_L);
+
+        ActionMap actionMap = panel.getActionMap();
+        actionMap.put(KeyEvent.VK_SPACE, WorldAxes.getInstance());
+        actionMap.put(KeyEvent.VK_UP, PitchUp.getInstance());
+        actionMap.put(KeyEvent.VK_DOWN, PitchDown.getInstance());
+        actionMap.put(KeyEvent.VK_LEFT, PanRight.getInstance());
+        actionMap.put(KeyEvent.VK_RIGHT, PanLeft.getInstance());
+        actionMap.put(KeyEvent.VK_Q, Up.getInstance());
+        actionMap.put(KeyEvent.VK_E, Down.getInstance());
+        actionMap.put(KeyEvent.VK_W, Forward.getInstance());
+        actionMap.put(KeyEvent.VK_S, Back.getInstance());
+        actionMap.put(KeyEvent.VK_A, StrafeLeft.getInstance());
+        actionMap.put(KeyEvent.VK_D, StrafeRight.getInstance());
+        actionMap.put(KeyEvent.VK_ESCAPE, Quit.getInstance());
+        actionMap.put(KeyEvent.VK_L, Lights.getInstance());
     }
 }

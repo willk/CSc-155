@@ -23,38 +23,55 @@ import static com.jogamp.opengl.GL4.*;
 public class GLWorld extends JFrame implements GLEventListener, MouseListener, MouseMotionListener, MouseWheelListener {
     private final GLCanvas canvas;
     private final JPanel panel;
-    // Locations
-    private final Camera camera = new Camera(0, 0.2f, 6.0f);
+
+    private final Camera camera = new Camera(0, 5f, 15f);
+
     Matrix3D lightVMatrix = new Matrix3D(), lightPMatrix = new Matrix3D(),
             shadowMVP1 = new Matrix3D(), shadowMVP2 = new Matrix3D(),
-            b = new Matrix3D();
+            b = new Matrix3D(),
+            mMatrix = new Matrix3D(),
+            vMatrix = new Matrix3D(),
+            mvMatrix = new Matrix3D(),
+            projMatrix = new Matrix3D();
+
     // Objects and Models
     ImportedModel pyramid = new ImportedModel("pyramid.obj");
     Torus torus = new Torus(10f, 2f, 48);
     Sphere sphere = new Sphere(48);
+
     // Material
     private Material material;
     private Point3D torusLocation = new Point3D(0, 0, 0),
             pyramidLocation = new Point3D(0, 10, 0),
-            sphereLocation = new Point3D(0, 0, 0);
-    private Point3D lightLocation = new Point3D(-3.8f, 2.2f, 1.1f);
-    private Matrix3D mMatrix = new Matrix3D(),
-            vMatrix = new Matrix3D(),
-            mvMatrix = new Matrix3D(),
-            projMatrix = new Matrix3D();
+            sphereLocation = new Point3D(0, 0, 0),
+            lightLocation = new Point3D(-3.8f, 2.2f, 1.1f);
     // Lighting
     private float[] globalAmbient = new float[]{0.7f, 0.7f, 0.7f, 1.0f};
-    //    private Point3D lightPosition;
     private PositionalLight light = new PositionalLight();
-    // Shadows
-    private int screenX, screenY, shadowTex[] = new int[1], shadowBuffer[] = new int[1];
-    private String[] passOneVertexProgram, passTwoVertexProgram, passTwoFragmentProgram;
-    private int rendererOne, rendererTwo;
 
-    private int mv_location, proj_location, n_location, vao[], vbo[];
+
+    private int aspect,
+            screenX,
+            screenY,
+            mv_location,
+            proj_location,
+            n_location,
+            passOneRenderer,
+            passTwoRenderer,
+            lightRenderer;
+
+    private int[] vao,
+            vbo,
+            shadowTex = new int[1],
+            shadowBuffer = new int[1];
+
+    private String[] shadowVertex,
+            defaultVertex,
+            defaultFragment,
+            lightVertex,
+            lightFragment;
 
     private GLSLUtils util = new GLSLUtils();
-    private int aspect;
 
     public GLWorld() {
         this.setTitle("William Kinderman - CSc 155 - A4");
@@ -172,7 +189,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
     public void firstPass(GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
 
-        gl.glUseProgram(rendererOne);
+        gl.glUseProgram(passOneRenderer);
 
         Point3D origin = new Point3D(0.0, 0.0, 0.0);
         Vector3D up = new Vector3D(0.0, 1.0, 0.0);
@@ -193,7 +210,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         shadowMVP1.concatenate(lightPMatrix);
         shadowMVP1.concatenate(lightVMatrix);
         shadowMVP1.concatenate(mMatrix);
-        int shadow_location = gl.glGetUniformLocation(rendererOne, "shadowMVP");
+        int shadow_location = gl.glGetUniformLocation(passOneRenderer, "shadowMVP");
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP1.getFloatValues(), 0);
 
         // set up torus vertices buffer
@@ -220,7 +237,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         shadowMVP1.concatenate(lightPMatrix);
         shadowMVP1.concatenate(lightVMatrix);
         shadowMVP1.concatenate(mMatrix);
-        shadow_location = gl.glGetUniformLocation(rendererOne, "shadowMVP");
+        shadow_location = gl.glGetUniformLocation(passOneRenderer, "shadowMVP");
         gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP1.getFloatValues(), 0);
 
         // VBO
@@ -237,9 +254,9 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
        /*
         * Draw Pyramid
         */
-        gl.glUseProgram(rendererOne);
-        mv_location = gl.glGetUniformLocation(rendererOne, "mv_matrix");
-        proj_location = gl.glGetUniformLocation(rendererOne, "proj_matrix");
+        gl.glUseProgram(passOneRenderer);
+        mv_location = gl.glGetUniformLocation(passOneRenderer, "mv_matrix");
+        proj_location = gl.glGetUniformLocation(passOneRenderer, "proj_matrix");
 
         //  build the MODEL matrix
         mMatrix.setToIdentity();
@@ -275,13 +292,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
          * Draw Torus
          */
         material = Material.BRONZE;
-        installLights(rendererTwo, vMatrix, d);
-        gl.glUseProgram(rendererTwo);
+        installLights(passTwoRenderer, vMatrix, d);
+        gl.glUseProgram(passTwoRenderer);
 
-        mv_location = gl.glGetUniformLocation(rendererTwo, "mv_matrix");
-        proj_location = gl.glGetUniformLocation(rendererTwo, "proj_matrix");
-        n_location = gl.glGetUniformLocation(rendererTwo, "normalMat");
-        int shadow_location = gl.glGetUniformLocation(rendererTwo, "shadowMVP");
+        mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
+        proj_location = gl.glGetUniformLocation(passTwoRenderer, "proj_matrix");
+        n_location = gl.glGetUniformLocation(passTwoRenderer, "normalMat");
+        int shadow_location = gl.glGetUniformLocation(passTwoRenderer, "shadowMVP");
 
         //  build the MODEL matrix
         mMatrix.setToIdentity();
@@ -333,13 +350,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
          * Draw Sphere
          */
         material = Material.SILVER;
-        installLights(rendererTwo, vMatrix, d);
-        gl.glUseProgram(rendererTwo);
+        installLights(passTwoRenderer, vMatrix, d);
+        gl.glUseProgram(passTwoRenderer);
 
-        mv_location = gl.glGetUniformLocation(rendererTwo, "mv_matrix");
-        proj_location = gl.glGetUniformLocation(rendererTwo, "proj_matrix");
-        n_location = gl.glGetUniformLocation(rendererTwo, "normalMat");
-        shadow_location = gl.glGetUniformLocation(rendererTwo, "shadowMVP");
+        mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
+        proj_location = gl.glGetUniformLocation(passTwoRenderer, "proj_matrix");
+        n_location = gl.glGetUniformLocation(passTwoRenderer, "normalMat");
+        shadow_location = gl.glGetUniformLocation(passTwoRenderer, "shadowMVP");
 
         //  build the MODEL matrix
         mMatrix.setToIdentity();
@@ -390,12 +407,12 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
          * Draw Pyramid
          */
         material = Material.GOLD;
-        installLights(rendererTwo, vMatrix, d);
+        installLights(passTwoRenderer, vMatrix, d);
 
-        gl.glUseProgram(rendererTwo);
-        mv_location = gl.glGetUniformLocation(rendererTwo, "mv_matrix");
-        proj_location = gl.glGetUniformLocation(rendererTwo, "proj_matrix");
-        n_location = gl.glGetUniformLocation(rendererTwo, "normalMat");
+        gl.glUseProgram(passTwoRenderer);
+        mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
+        proj_location = gl.glGetUniformLocation(passTwoRenderer, "proj_matrix");
+        n_location = gl.glGetUniformLocation(passTwoRenderer, "normalMat");
 
         //  build the MODEL matrix
         mMatrix.setToIdentity();
@@ -621,49 +638,44 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
     }
 
     private void createShaderPrograms(GLAutoDrawable d) {
-        int[] lengths;
         GL4 gl = (GL4) d.getGL();
 
-        passOneVertexProgram = util.readShaderSource("src/shaders/blinnVert1.glsl");
-        passTwoVertexProgram = util.readShaderSource("src/shaders/blinnVert2.glsl");
-        passTwoFragmentProgram = util.readShaderSource("src/shaders/blinnFrag2.glsl");
+        shadowVertex = util.readShaderSource("src/shaders/shadowVertex.glsl");
+        defaultVertex = util.readShaderSource("src/shaders/defaultVertex.glsl");
+        defaultFragment = util.readShaderSource("src/shaders/defaultFragment.glsl");
+        lightVertex = util.readShaderSource("src/shaders/lightVertex.glsl");
+        lightFragment = util.readShaderSource("src/shaders/lightFragment.glsl");
 
         int vertexShader1 = gl.glCreateShader(GL4.GL_VERTEX_SHADER);
         int vertexShader2 = gl.glCreateShader(GL4.GL_VERTEX_SHADER);
         int fragmentShader2 = gl.glCreateShader(GL4.GL_FRAGMENT_SHADER);
 
-        System.out.println("\nLoading shader source into shader objects");
-        lengths = new int[passOneVertexProgram.length];
-        for (int i = 0; i < lengths.length; i++) {
-            lengths[i] = passOneVertexProgram[i].length();
-        }
-        gl.glShaderSource(vertexShader1, passOneVertexProgram.length, passOneVertexProgram, lengths, 0);
+        int[] l = new int[shadowVertex.length];
+        for (int i = 0; i < l.length; i++) l[i] = shadowVertex[i].length();
+        gl.glShaderSource(vertexShader1, shadowVertex.length, shadowVertex, l, 0);
 
-        lengths = new int[passTwoVertexProgram.length];
-        for (int i = 0; i < lengths.length; i++) {
-            lengths[i] = passTwoVertexProgram[i].length();
-        }
-        gl.glShaderSource(vertexShader2, passTwoVertexProgram.length, passTwoVertexProgram, lengths, 0);
+        l = new int[defaultVertex.length];
+        for (int i = 0; i < l.length; i++) l[i] = defaultVertex[i].length();
+        gl.glShaderSource(vertexShader2, defaultVertex.length, defaultVertex, l, 0);
 
-        lengths = new int[passTwoFragmentProgram.length];
-        for (int i = 0; i < lengths.length; i++) {
-            lengths[i] = passTwoFragmentProgram[i].length();
-        }
-        gl.glShaderSource(fragmentShader2, passTwoFragmentProgram.length, passTwoFragmentProgram, lengths, 0);
+        l = new int[defaultFragment.length];
+        for (int i = 0; i < l.length; i++) l[i] = defaultFragment[i].length();
+        gl.glShaderSource(fragmentShader2, defaultFragment.length, defaultFragment, l, 0);
 
         gl.glCompileShader(vertexShader1);
         gl.glCompileShader(vertexShader2);
         gl.glCompileShader(fragmentShader2);
 
-        rendererOne = gl.glCreateProgram();
-        rendererTwo = gl.glCreateProgram();
+        passOneRenderer = gl.glCreateProgram();
+        passTwoRenderer = gl.glCreateProgram();
+        lightRenderer = gl.glCreateProgram();
 
-        gl.glAttachShader(rendererOne, vertexShader1);
-        gl.glAttachShader(rendererTwo, vertexShader2);
-        gl.glAttachShader(rendererTwo, fragmentShader2);
+        gl.glAttachShader(passOneRenderer, vertexShader1);
+        gl.glAttachShader(passTwoRenderer, vertexShader2);
+        gl.glAttachShader(passTwoRenderer, fragmentShader2);
 
-        gl.glLinkProgram(rendererOne);
-        gl.glLinkProgram(rendererTwo);
+        gl.glLinkProgram(passOneRenderer);
+        gl.glLinkProgram(passTwoRenderer);
     }
 
     /*

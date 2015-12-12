@@ -519,6 +519,9 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glBufferData(GL.GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL.GL_STATIC_DRAW);
 
         // Pyramid Texels
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+        FloatBuffer tBuffer = FloatBuffer.wrap(pt);
+        gl.glBufferData(GL_ARRAY_BUFFER, tBuffer.limit() * 4, tBuffer, GL_STATIC_DRAW);
 
         // Pyramid Normals
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
@@ -557,7 +560,10 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         vBuffer = FloatBuffer.wrap(tp);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL.GL_STATIC_DRAW);
 
-        // Torus Texel vbo 4
+        // Torus Texel
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        tBuffer = FloatBuffer.wrap(tt);
+        gl.glBufferData(GL_ARRAY_BUFFER, tBuffer.limit() * 4, tBuffer, GL_STATIC_DRAW);
 
         // Torus Normals
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[5]);
@@ -586,14 +592,18 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         // END Sphere
 
         // Sphere Vertices
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[6]);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
         vBuffer = FloatBuffer.wrap(sp);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL.GL_STATIC_DRAW);
+        gl.glBufferData(GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        tBuffer = FloatBuffer.wrap(st);
+        gl.glBufferData(GL_ARRAY_BUFFER, tBuffer.limit() * 4, tBuffer, GL_STATIC_DRAW);
 
         // Sphere Normals
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[8]);
-        nBuffer = FloatBuffer.wrap(pn);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL.GL_STATIC_DRAW);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
+        nBuffer = FloatBuffer.wrap(sn);
+        gl.glBufferData(GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL_STATIC_DRAW);
     }
 
     @Override

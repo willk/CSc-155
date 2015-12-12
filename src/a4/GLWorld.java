@@ -235,7 +235,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
          * Draw Torus
          */
         material = Material.SILVER;
-        installLights(passTwoRenderer, vMatrix, d);
+        createLights(passTwoRenderer, vMatrix, d);
         gl.glUseProgram(passTwoRenderer);
 
         mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
@@ -293,7 +293,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
          * Draw Sphere
          */
         material = Material.SILVER;
-        installLights(passTwoRenderer, vMatrix, d);
+        createLights(passTwoRenderer, vMatrix, d);
         gl.glUseProgram(passTwoRenderer);
 
         mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
@@ -349,7 +349,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
          * Draw Pyramid
          */
         material = Material.GOLD;
-        installLights(passTwoRenderer, vMatrix, d);
+        createLights(passTwoRenderer, vMatrix, d);
 
         gl.glUseProgram(passTwoRenderer);
         mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
@@ -515,15 +515,15 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
 
         //  Pyramid Vertices
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
-        FloatBuffer pyrVertBuf = FloatBuffer.wrap(pp);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, pyrVertBuf.limit() * 4, pyrVertBuf, GL.GL_STATIC_DRAW);
+        FloatBuffer vBuffer = FloatBuffer.wrap(pp);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL.GL_STATIC_DRAW);
 
         // Pyramid Texels
 
         // Pyramid Normals
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
-        FloatBuffer pyrNorBuf = FloatBuffer.wrap(pn);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, pyrNorBuf.limit() * 4, pyrNorBuf, GL.GL_STATIC_DRAW);
+        FloatBuffer nBuffer = FloatBuffer.wrap(pn);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL.GL_STATIC_DRAW);
 
 
         // END Pyramid
@@ -554,15 +554,15 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
 
         //  Torus Vertices
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
-        FloatBuffer vertBuf = FloatBuffer.wrap(tp);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL.GL_STATIC_DRAW);
+        vBuffer = FloatBuffer.wrap(tp);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL.GL_STATIC_DRAW);
 
         // Torus Texel vbo 4
 
         // Torus Normals
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[5]);
-        FloatBuffer torusNorBuf = FloatBuffer.wrap(tn);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, torusNorBuf.limit() * 4, torusNorBuf, GL.GL_STATIC_DRAW);
+        nBuffer = FloatBuffer.wrap(tn);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL.GL_STATIC_DRAW);
 
         // END Torus
 
@@ -587,13 +587,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
 
         // Sphere Vertices
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[6]);
-        FloatBuffer sphereVertBuf = FloatBuffer.wrap(sp);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, sphereVertBuf.limit() * 4, sphereVertBuf, GL.GL_STATIC_DRAW);
+        vBuffer = FloatBuffer.wrap(sp);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vBuffer.limit() * 4, vBuffer, GL.GL_STATIC_DRAW);
 
         // Sphere Normals
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[8]);
-        FloatBuffer sphereNorBuf = FloatBuffer.wrap(pn);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, sphereNorBuf.limit() * 4, sphereNorBuf, GL.GL_STATIC_DRAW);
+        nBuffer = FloatBuffer.wrap(pn);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, nBuffer.limit() * 4, nBuffer, GL.GL_STATIC_DRAW);
     }
 
     @Override
@@ -709,7 +709,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
     /*
      * From Dr. Gordon's Code
      */
-    private void installLights(int rendering_program, Matrix3D v_matrix, GLAutoDrawable d) {
+    private void createLights(int rendering_program, Matrix3D v_matrix, GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
 
         Material currentMaterial = new Material();

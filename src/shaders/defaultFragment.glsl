@@ -37,11 +37,11 @@ void main(void) {
         fragColor = (globalAmbient * material.ambient
                 + light.ambient * material.ambient
                 + light.diffuse * material.diffuse * max(dot(L,N),0.0)
-                + light.specular * material.specular * pow(max(dot(H,N),0.0),material.shininess*3.0)) * 0.4
-                + (texture2D(s, tc)) * 0.6;
+                + light.specular * material.specular * pow(max(dot(H,N),0.0),material.shininess*3.0)) * 0.6
+                + (texture2D(s, tc)) * 0.4;
     } else {
         fragColor = (globalAmbient * material.ambient
-                + light.ambient * material.ambient) * 0.4
-                + (texture2D(s, tc)) * 0.6;
+                + light.ambient * material.ambient) * 0.6
+                + (texture2D(s, tc)) * 0.4;
     }
 }

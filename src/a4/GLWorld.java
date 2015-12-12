@@ -13,6 +13,7 @@ import graphicslib3D.shape.Torus;
 import objects.Camera;
 import objects.ImportedModel;
 import objects.Sphere;
+import objects.TextureReader;
 
 import javax.swing.*;
 import java.awt.event.*;
@@ -72,6 +73,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             lightFragment;
 
     private GLSLUtils util = new GLSLUtils();
+    private TextureReader tr;
 
     public GLWorld() {
         this.setTitle("William Kinderman - CSc 155 - A4");
@@ -241,7 +243,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
         proj_location = gl.glGetUniformLocation(passTwoRenderer, "proj_matrix");
         n_location = gl.glGetUniformLocation(passTwoRenderer, "normalMat");
-        int shadow_location = gl.glGetUniformLocation(passTwoRenderer, "shadowMVP");
+        int shadowLocation = gl.glGetUniformLocation(passTwoRenderer, "shadowMVP");
 
         //  build the MODEL matrix
         mMatrix.setToIdentity();
@@ -268,7 +270,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glUniformMatrix4fv(mv_location, 1, false, mvMatrix.getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_location, 1, false, projMatrix.getFloatValues(), 0);
         gl.glUniformMatrix4fv(n_location, 1, false, (mvMatrix.inverse()).transpose().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP2.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(shadowLocation, 1, false, shadowMVP2.getFloatValues(), 0);
 
         // Torus Vertex VBO
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[3]);
@@ -299,7 +301,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
         proj_location = gl.glGetUniformLocation(passTwoRenderer, "proj_matrix");
         n_location = gl.glGetUniformLocation(passTwoRenderer, "normalMat");
-        shadow_location = gl.glGetUniformLocation(passTwoRenderer, "shadowMVP");
+        shadowLocation = gl.glGetUniformLocation(passTwoRenderer, "shadowMVP");
 
         //  build the MODEL matrix
         mMatrix.setToIdentity();
@@ -324,12 +326,19 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glUniformMatrix4fv(mv_location, 1, false, mvMatrix.getFloatValues(), 0);
         gl.glUniformMatrix4fv(proj_location, 1, false, projMatrix.getFloatValues(), 0);
         gl.glUniformMatrix4fv(n_location, 1, false, (mvMatrix.inverse()).transpose().getFloatValues(), 0);
-        gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP2.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(shadowLocation, 1, false, shadowMVP2.getFloatValues(), 0);
 
         // Sphere Vertex VBO
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[6]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        // Sphere Texture
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        gl.glVertexAttribPointer(2, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, concreteTexture);
 
         // Sphere Normal VBO
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[8]);
@@ -373,7 +382,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         shadowMVP2.concatenate(lightPMatrix);
         shadowMVP2.concatenate(lightVMatrix);
         shadowMVP2.concatenate(mMatrix);
-        gl.glUniformMatrix4fv(shadow_location, 1, false, shadowMVP2.getFloatValues(), 0);
+        gl.glUniformMatrix4fv(shadowLocation, 1, false, shadowMVP2.getFloatValues(), 0);
 
         //  put the MV and PROJ matrices into the corresponding uniforms
         gl.glUniformMatrix4fv(mv_location, 1, false, mvMatrix.getFloatValues(), 0);
@@ -384,6 +393,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL.GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        // Pyramid Texture VBO
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(2, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, concreteTexture);
 
         // Pyramid Normal VBO
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo[2]);
@@ -424,6 +440,8 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         vao = new int[1];
         vbo = new int[20];
 
+        tr = new TextureReader();
+
         createShaderPrograms(d);
         setupVertices(gl);
         setupShadowBuffers(d);
@@ -448,6 +466,8 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         // Help reduce shadow boarder artifacts.
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        concreteTexture = tr.loadTexture(d, "src/textures/concrete.jpg");
     }
 
     public void setupShadowBuffers(GLAutoDrawable d) {

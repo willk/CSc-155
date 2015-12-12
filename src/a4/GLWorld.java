@@ -25,7 +25,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
     private final JPanel panel;
 
     private final Camera camera = new Camera(0, 0, 5);
-
+    private final Vector3D up = new Vector3D(0.0, 1.0, 0.0);
     Matrix3D lightVMatrix = new Matrix3D(), lightPMatrix = new Matrix3D(),
             shadowMVP1 = new Matrix3D(), shadowMVP2 = new Matrix3D(),
             b = new Matrix3D(),
@@ -33,19 +33,18 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             vMatrix = new Matrix3D(),
             mvMatrix = new Matrix3D(),
             projMatrix = new Matrix3D();
-
     // Objects and Models
     ImportedModel pyramid = new ImportedModel("pyramid.obj");
     Torus torus = new Torus(10f, 2f, 48);
     Sphere sphere = new Sphere(48);
-
     // Material
     private Material material;
+    ;
     private Point3D torusLocation = new Point3D(0, 0, 0),
-            pyramidLocation = new Point3D(0, 1.75, 0),
+            pyramidLocation = new Point3D(0, 1.5, 0),
             sphereLocation = new Point3D(0, 0, 0),
-            lightLocation = new Point3D(3, -0.8, 7, 1);
-
+            lightLocation = new Point3D(3, -0.8, 7, 1),
+            origin = new Point3D(0.0, 0.0, 0.0);
     // Lighting
     private float[] globalAmbient = new float[]{0.7f, 0.7f, 0.7f, 1.0f};
     private PositionalLight light = new PositionalLight();
@@ -139,8 +138,6 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
 
         gl.glUseProgram(passOneRenderer);
 
-        Point3D origin = new Point3D(0.0, 0.0, 0.0);
-        Vector3D up = new Vector3D(0.0, 1.0, 0.0);
         lightVMatrix.setToIdentity();
         lightPMatrix.setToIdentity();
 
@@ -238,7 +235,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         /*
          * Draw Torus
          */
-        material = Material.BRONZE;
+        material = Material.SILVER;
         installLights(passTwoRenderer, vMatrix, d);
         gl.glUseProgram(passTwoRenderer);
 

@@ -25,6 +25,7 @@ uniform mat4 proj_matrix;
 uniform mat4 normalMat;
 uniform mat4 shadowMVP;
 layout (binding=0) uniform sampler2DShadow shadowTex;
+layout (binding=1) uniform sampler2D s;
 
 void main(void){
     //output the vertex position to the rasterizer for interpolation

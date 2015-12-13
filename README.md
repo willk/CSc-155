@@ -16,13 +16,13 @@ c:\William Kinderman - A4> java a4.Starter
 ```
 
 # Controls
-w: Move forward.\
-a: Strafe left. \
-s: Move back. \
-d: Strafe right. \
-q: Strafe up. \
-e: Strafe down. \
-Mouse Wheel: Move light along x axis. \
-CTRL Mouse Wheel: Move light along z axis. \
-Mouse Drag: Move light along x,y plane. \
+w: Move forward.  
+a: Strafe left.  
+s: Move back.  
+d: Strafe right.  
+q: Strafe up.  
+e: Strafe down.  
+Mouse Wheel: Move light along x axis.  
+CTRL Mouse Wheel: Move light along z axis.  
+Mouse Drag: Move light along x,y plane.  
 ESC: Close program.

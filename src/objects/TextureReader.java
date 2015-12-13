@@ -62,7 +62,7 @@ public class TextureReader {
      * content. The file is assumed to be in a format understood by ImageIO.read
      * (GIF, JPG, PNG, or BMP).
      */
-    private BufferedImage getBufferedImage(String fileName) {
+    public BufferedImage getBufferedImage(String fileName) {
         BufferedImage img;
         try {
             img = ImageIO.read(new File(fileName));
@@ -82,7 +82,7 @@ public class TextureReader {
      * vertically so that the row order puts the bottom of the image on the
      * first row.
      */
-    private byte[] getRGBAPixelData(BufferedImage img) {
+    public byte[] getRGBAPixelData(BufferedImage img) {
         byte[] imgRGBA;
         int height = img.getHeight(null);
         int width = img.getWidth(null);

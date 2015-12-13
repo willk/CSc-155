@@ -9,13 +9,12 @@ import commands.*;
 import graphicslib3D.*;
 import graphicslib3D.light.PositionalLight;
 import graphicslib3D.shape.Torus;
-import objects.Camera;
-import objects.ImportedModel;
-import objects.Sphere;
-import objects.TextureReader;
+import objects.*;
 
 import javax.swing.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static com.jogamp.opengl.GL4.*;
@@ -40,7 +39,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
     // Material
     private Material material;
     ;
-    private Point3D lightLocation = new Point3D(3, -0.8, 7, 1),
+    private Point3D lightLocation = new Point3D(4.3, 3, 7, 1),
             origin = new Point3D(0.0, 0.0, 0.0),
             tRotate = new Point3D(25, 0, 0),
             pRotate = new Point3D(30, 40, 0),
@@ -48,7 +47,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             tScale = new Point3D(1, 1, 1),
             pScale = new Point3D(.5, .5, .5),
             sScale = new Point3D(1, 1, 1),
-            tTranslate = new Point3D(0, 0, 0),
+            tTranslate = new Point3D(0, -5, 0),
             pTranslate = new Point3D(0, 1.5, 0),
             sTranslate = new Point3D(0, 0, 0);
 
@@ -65,8 +64,11 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             passOneRenderer,
             passTwoRenderer,
             lightRenderer,
+            skyRenderer,
+            envRenderer,
             concreteTexture,
-            gold;
+            goldTexture,
+            skyboxTexture;
 
     private int[] vao,
             vbo,
@@ -77,7 +79,11 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
             defaultVertex,
             defaultFragment,
             lightVertex,
-            lightFragment;
+            lightFragment,
+            skyboxVertex,
+            skyboxFragment,
+            envVertex,
+            envFragment;
 
     private GLSLUtils util = new GLSLUtils();
     private TextureReader tr;
@@ -136,6 +142,8 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glBindFramebuffer(GL_FRAMEBUFFER, 0);
         gl.glActiveTexture(GL_TEXTURE0);
         gl.glBindTexture(GL_TEXTURE_2D, shadowTex[0]);
+
+        skyboxPass(d);
 
         gl.glDrawBuffer(GL_FRONT);
 
@@ -202,6 +210,8 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDepthFunc(GL_LEQUAL);
 
+        gl.glDrawArrays(GL_TRIANGLES, 0, sphere.getIndices().length);
+
        /*
         * Draw Pyramid
         */
@@ -234,6 +244,42 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glDrawArrays(GL_TRIANGLES, 0, pyramid.getNumVertices());
     }
 
+    public void skyboxPass(GLAutoDrawable d) {
+        GL4 gl = (GL4) d.getGL();
+
+        float depthClearVal[] = new float[1];
+        depthClearVal[0] = 1;
+        gl.glClearBufferfv(GL_DEPTH, 0, depthClearVal, 0);
+
+        // VIEW Matrix
+        vMatrix.setToIdentity();
+        vMatrix.translate(-camera.getX(), -camera.getX(), -camera.getZ());
+
+        // Draw Skybox
+        gl.glUseProgram(skyRenderer);
+
+        // P Matrix
+        proj_location = gl.glGetUniformLocation(skyRenderer, "proj_matrix");
+        gl.glUniformMatrix4fv(proj_location, 1, false, projMatrix.getFloatValues(), 0);
+
+        // V Matrix
+        int view_location = gl.glGetUniformLocation(skyRenderer, "view_matrix");
+        Matrix3D skyboxView = (Matrix3D) vMatrix.clone();
+        skyboxView.scale(-1, -1, 1);
+        gl.glUniformMatrix4fv(view_location, 1, false, skyboxView.getFloatValues(), 0);
+
+        // Activate the Texture
+        gl.glActiveTexture(GL_TEXTURE3);
+        gl.glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+
+        // Disable depth testing
+        gl.glEnable(GL_CULL_FACE);
+        gl.glFrontFace(GL_CCW);
+        gl.glDisable(GL_DEPTH_TEST);
+        gl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        gl.glEnable(GL_DEPTH_TEST);
+    }
+
     public void secondPass(GLAutoDrawable d) {
         double amt = (double) (System.currentTimeMillis() % 36000) / 100.0;
         GL4 gl = (GL4) d.getGL();
@@ -242,13 +288,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
          * Draw Torus
          */
         material = Material.SILVER;
-        createLights(passTwoRenderer, vMatrix, d);
-        gl.glUseProgram(passTwoRenderer);
+        createLights(envRenderer, vMatrix, d);
+        gl.glUseProgram(envRenderer);
 
-        mv_location = gl.glGetUniformLocation(passTwoRenderer, "mv_matrix");
-        proj_location = gl.glGetUniformLocation(passTwoRenderer, "proj_matrix");
-        n_location = gl.glGetUniformLocation(passTwoRenderer, "normalMat");
-        int shadowLocation = gl.glGetUniformLocation(passTwoRenderer, "shadowMVP");
+        mv_location = gl.glGetUniformLocation(envRenderer, "mv_matrix");
+        proj_location = gl.glGetUniformLocation(envRenderer, "proj_matrix");
+        n_location = gl.glGetUniformLocation(envRenderer, "normalMat");
+        int shadowLocation = gl.glGetUniformLocation(envRenderer, "shadowMVP");
 
         //  build the MODEL matrix
         mMatrix.setToIdentity();
@@ -280,6 +326,13 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
+
+        // Torus Texture VBO
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        gl.glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(2);
+        gl.glActiveTexture(GL_TEXTURE4);
+        gl.glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 
         // Torus Normal VBO
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
@@ -338,23 +391,25 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glEnableVertexAttribArray(0);
 
         // Sphere Texture
-//        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
-//        gl.glVertexAttribPointer(2, 2, GL_FLOAT, false, 0, 0);
-//        gl.glEnableVertexAttribArray(1);
-//        gl.glActiveTexture(GL_TEXTURE);
-//        gl.glBindTexture(GL_TEXTURE_2D, concreteTexture);
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        gl.glVertexAttribPointer(2, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(2);
+        gl.glActiveTexture(GL_TEXTURE1);
+        gl.glBindTexture(GL_TEXTURE_2D, concreteTexture);
 
         // Sphere Normal VBO
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
         gl.glVertexAttribPointer(1, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
 
-        gl.glClear(GL_DEPTH_BUFFER_BIT);
         gl.glEnable(GL_CULL_FACE);
         gl.glFrontFace(GL_CCW);
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDepthFunc(GL_LEQUAL);
 
+        gl.glDrawArrays(GL_TRIANGLES, 0, sphere.getIndices().length);
+
+        gl.glFrontFace(GL_CW);
         gl.glDrawArrays(GL_TRIANGLES, 0, sphere.getIndices().length);
 
 
@@ -396,12 +451,12 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-//        // Pyramid Texture VBO
-//        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-//        gl.glVertexAttribPointer(2, 2, GL_FLOAT, false, 0, 0);
-//        gl.glEnableVertexAttribArray(1);
-//        gl.glActiveTexture(GL_TEXTURE1);
-//        gl.glBindTexture(GL_TEXTURE_2D, gold);
+        // Pyramid Texture VBO
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+        gl.glVertexAttribPointer(2, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(2);
+        gl.glActiveTexture(GL_TEXTURE1);
+        gl.glBindTexture(GL_TEXTURE_2D, goldTexture);
 
         // Pyramid Normal VBO
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[2]);
@@ -469,8 +524,10 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        gold = tr.loadTexture(d, "src/textures/gold.jpg");
-        concreteTexture = tr.loadTexture(d, "src/textures/concrete.jpg");
+        goldTexture = tr.loadTexture(d, "src/textures/gold.jpg");
+        concreteTexture = tr.loadTexture(d, "src/textures/concrete.png");
+        skyboxTexture = loadCubeMap(d);
+        gl.glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     }
 
     public void setupShadowBuffers(GLAutoDrawable d) {
@@ -637,18 +694,27 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
 
     private void createShaderPrograms(GLAutoDrawable d) {
         GL4 gl = (GL4) d.getGL();
+        GLErrors err = new GLErrors(d);
 
         shadowVertex = util.readShaderSource("src/shaders/shadowVertex.glsl");
         defaultVertex = util.readShaderSource("src/shaders/defaultVertex.glsl");
         defaultFragment = util.readShaderSource("src/shaders/defaultFragment.glsl");
         lightVertex = util.readShaderSource("src/shaders/lightVertex.glsl");
         lightFragment = util.readShaderSource("src/shaders/lightFragment.glsl");
+        skyboxVertex = util.readShaderSource("src/shaders/skyboxVertex.glsl");
+        skyboxFragment = util.readShaderSource("src/shaders/skyboxFragment.glsl");
+        envVertex = util.readShaderSource("src/shaders/environmentVertex.glsl");
+        envFragment = util.readShaderSource("src/shaders/environmentFragment.glsl");
 
         int shadowVertexShader = gl.glCreateShader(GL_VERTEX_SHADER),
                 defaultVertexShader = gl.glCreateShader(GL_VERTEX_SHADER),
                 defaultFragmentShader = gl.glCreateShader(GL_FRAGMENT_SHADER),
                 lightVertexShader = gl.glCreateShader(GL_VERTEX_SHADER),
-                lightFragmentShader = gl.glCreateShader(GL_FRAGMENT_SHADER);
+                lightFragmentShader = gl.glCreateShader(GL_FRAGMENT_SHADER),
+                skyboxVertexShader = gl.glCreateShader(GL_VERTEX_SHADER),
+                skyboxFragmentShader = gl.glCreateShader(GL_FRAGMENT_SHADER),
+                envVertexShader = gl.glCreateShader(GL_VERTEX_SHADER),
+                envFragmentShader = gl.glCreateShader(GL_FRAGMENT_SHADER);
 
         int[] l = new int[shadowVertex.length];
         for (int i = 0; i < l.length; i++) l[i] = shadowVertex[i].length();
@@ -670,25 +736,93 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         for (int i = 0; i < l.length; i++) l[i] = lightFragment[i].length();
         gl.glShaderSource(lightFragmentShader, lightFragment.length, lightFragment, l, 0);
 
+        l = new int[skyboxVertex.length];
+        for (int i = 0; i < l.length; i++) l[i] = skyboxVertex[i].length();
+        gl.glShaderSource(skyboxVertexShader, skyboxVertex.length, skyboxVertex, l, 0);
+
+        l = new int[skyboxFragment.length];
+        for (int i = 0; i < l.length; i++) l[i] = skyboxFragment[i].length();
+        gl.glShaderSource(skyboxFragmentShader, skyboxFragment.length, skyboxFragment, l, 0);
+
+        l = new int[envVertex.length];
+        for (int i = 0; i < l.length; i++) l[i] = envVertex[i].length();
+        gl.glShaderSource(envVertexShader, envVertex.length, envVertex, l, 0);
+
+        l = new int[envFragment.length];
+        for (int i = 0; i < l.length; i++) l[i] = envFragment[i].length();
+        gl.glShaderSource(envFragmentShader, envFragment.length, envFragment, l, 0);
+
         gl.glCompileShader(shadowVertexShader);
+        err.OpenGLError();
+        err.vertexError(shadowVertexShader, "Shadow Vertex");
+
         gl.glCompileShader(defaultVertexShader);
+        err.OpenGLError();
+        err.vertexError(defaultVertexShader, "Default Vertex");
+
         gl.glCompileShader(defaultFragmentShader);
+        err.OpenGLError();
+        err.fragmentError(defaultFragmentShader, "Default Fragment");
+
         gl.glCompileShader(lightVertexShader);
+        err.OpenGLError();
+        err.vertexError(lightVertexShader, "Light Vertex");
+
         gl.glCompileShader(lightFragmentShader);
+        err.OpenGLError();
+        err.fragmentError(lightFragmentShader, "Light Fragment");
+
+        gl.glCompileShader(skyboxVertexShader);
+        err.OpenGLError();
+        err.vertexError(skyboxVertexShader, "SkyBox Vertex");
+
+        gl.glCompileShader(skyboxFragmentShader);
+        err.OpenGLError();
+        err.fragmentError(skyboxFragmentShader, "SkyBox Fragment");
+
+        gl.glCompileShader(envVertexShader);
+        err.OpenGLError();
+        err.vertexError(skyboxVertexShader, "Env Vertex");
+
+        gl.glCompileShader(envFragmentShader);
+        err.OpenGLError();
+        err.fragmentError(envFragmentShader, "Env Fragment");
 
         passOneRenderer = gl.glCreateProgram();
         passTwoRenderer = gl.glCreateProgram();
         lightRenderer = gl.glCreateProgram();
+        skyRenderer = gl.glCreateProgram();
+        envRenderer = gl.glCreateProgram();
 
         gl.glAttachShader(passOneRenderer, shadowVertexShader);
         gl.glAttachShader(passTwoRenderer, defaultVertexShader);
         gl.glAttachShader(passTwoRenderer, defaultFragmentShader);
         gl.glAttachShader(lightRenderer, lightVertexShader);
         gl.glAttachShader(lightRenderer, lightFragmentShader);
+        gl.glAttachShader(skyRenderer, skyboxVertexShader);
+        gl.glAttachShader(skyRenderer, skyboxFragmentShader);
+        gl.glAttachShader(envRenderer, envVertexShader);
+        gl.glAttachShader(envRenderer, envFragmentShader);
 
         gl.glLinkProgram(passOneRenderer);
+        err.OpenGLError();
+        err.linkError(passOneRenderer);
+
         gl.glLinkProgram(passTwoRenderer);
+        err.OpenGLError();
+        err.linkError(passTwoRenderer);
+
         gl.glLinkProgram(lightRenderer);
+        err.OpenGLError();
+        err.linkError(lightRenderer);
+
+        gl.glLinkProgram(skyRenderer);
+        err.OpenGLError();
+        err.linkError(skyRenderer);
+
+        gl.glLinkProgram(envRenderer);
+        err.OpenGLError();
+        err.linkError(envRenderer);
     }
 
     /*
@@ -707,6 +841,71 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         r.setElementAt(2, 3, C);
         r.setElementAt(3, 3, 0.0f);
         return r;
+    }
+
+    /*
+     * From Dr. Gordon's Code
+     */
+    private int loadCubeMap(GLAutoDrawable d) {
+        GL4 gl = (GL4) d.getGL();
+        String topFile = "src/textures/top.jpg";
+        String leftFile = "src/textures/left.jpg";
+        String fntFile = "src/textures/center.jpg";
+        String rightFile = "src/textures/right.jpg";
+        String bkFile = "src/textures/back.jpg";
+        String botFile = "src/textures/bottom.jpg";
+        BufferedImage topImage = tr.getBufferedImage(topFile);
+        BufferedImage leftImage = tr.getBufferedImage(leftFile);
+        BufferedImage fntImage = tr.getBufferedImage(fntFile);
+        BufferedImage rtImage = tr.getBufferedImage(rightFile);
+        BufferedImage bkImage = tr.getBufferedImage(bkFile);
+        BufferedImage botImage = tr.getBufferedImage(botFile);
+        byte[] topRGBA = tr.getRGBAPixelData(topImage);
+        byte[] leftRGBA = tr.getRGBAPixelData(leftImage);
+        byte[] cenRGBA = tr.getRGBAPixelData(fntImage);
+        byte[] rtRGBA = tr.getRGBAPixelData(rtImage);
+        byte[] bkRGBA = tr.getRGBAPixelData(bkImage);
+        byte[] botRGBA = tr.getRGBAPixelData(botImage);
+        ByteBuffer tpWrappedRGBA = ByteBuffer.wrap(topRGBA);
+        ByteBuffer lftWrappedRGBA = ByteBuffer.wrap(leftRGBA);
+        ByteBuffer cnWrappedRGBA = ByteBuffer.wrap(cenRGBA);
+        ByteBuffer rtWrappedRGBA = ByteBuffer.wrap(rtRGBA);
+        ByteBuffer bkWrappedRGBA = ByteBuffer.wrap(bkRGBA);
+        ByteBuffer btWrappedRGBA = ByteBuffer.wrap(botRGBA);
+
+        int[] textureIDs = new int[1];
+        gl.glGenTextures(1, textureIDs, 0);
+        int textureID = textureIDs[0];
+
+        // make the textureID the "current texture"
+        gl.glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+        gl.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 512, 512);
+
+        // attach textures to each face of the active texture
+        gl.glTexSubImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, 0, 0, 512, 512,
+                GL_RGBA, GL_UNSIGNED_BYTE, rtWrappedRGBA);
+        gl.glTexSubImage2D(
+                GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, 0, 0, 512, 512,
+                GL_RGBA, GL_UNSIGNED_BYTE, lftWrappedRGBA);
+        gl.glTexSubImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, 0, 0, 512, 512,
+                GL_RGBA, GL_UNSIGNED_BYTE, tpWrappedRGBA);
+        gl.glTexSubImage2D(
+                GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, 0, 0, 512, 512,
+                GL_RGBA, GL_UNSIGNED_BYTE, btWrappedRGBA);
+        gl.glTexSubImage2D(
+                GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, 0, 0, 512, 512,
+                GL_RGBA, GL_UNSIGNED_BYTE, bkWrappedRGBA);
+        gl.glTexSubImage2D(
+                GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, 0, 0, 512, 512,
+                GL_RGBA, GL_UNSIGNED_BYTE, cnWrappedRGBA);
+
+        // reduce seams
+        gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        gl.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        return textureID;
     }
 
     /*
@@ -829,6 +1028,7 @@ public class GLWorld extends JFrame implements GLEventListener, MouseListener, M
         lightLocation.scale(Math.pow(2, -6));
         lightLocation.setZ(z);
         canvas.display();
+        System.out.println(lightLocation);
     }
 
     @Override

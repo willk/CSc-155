@@ -24,29 +24,27 @@ uniform mat4 normalMat;
 uniform mat4 shadowMVP;
 layout (binding=0) uniform sampler2DShadow shadowTex;
 layout (binding=1) uniform sampler2D s;
+layout (binding=4) uniform samplerCube t;
 
 void main(void) {
     vec3 L = normalize(vLightDir);
     vec3 N = normalize(vNormal);
     vec3 V = normalize(-vVertPos);
     vec3 H = normalize(vHalfVec);
-    vec4 textureColor = texture2D(s, tc);
 
     float inShadow = textureProj(shadowTex, shadow_coord);
 
+    vec3 r = reflect(V, N);
 
-    if (textureColor.a < 0.5) discard;
-    else {
     if (inShadow != 0.0) {
         fragColor = (globalAmbient * material.ambient
                 + light.ambient * material.ambient
                 + light.diffuse * material.diffuse * max(dot(L,N),0.0)
                 + light.specular * material.specular * pow(max(dot(H,N),0.0),material.shininess*3.0)) * 0.6
-                + (textureColor) * 0.4;
+                + (texture(t, r)) * 0.4;
     } else {
         fragColor = (globalAmbient * material.ambient
                 + light.ambient * material.ambient) * 0.6
-                + (textureColor) * 0.4;
-    }
+                + (texture(t, r)) * 0.4;
     }
 }
